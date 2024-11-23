@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Mulish:wght@400;700&display=swap");
+
+@font-face {
+  font-family: "Myanmar Text";
+  src: url("../public/fonts/mmrtext.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: mynamarButton;
+  src: url(../public/fonts/Myanmar.ttf);
+}
+
+@font-face {
+  font-family: mynamarKhyay;
+  src: url(../public/fonts/MyanmarKhyay.ttf);
+}
+
+body {
+  color: black;
+
+  font-family: "Myanmar Text" !important;
+  letter-spacing: 0.8px;
+  @apply bg-gradient-to-t from-[#dcdcdc] to-[#F7F5F2] bg-no-repeat min-h-svh;
+}
+
+.onboarding {
+  min-height: calc(100vh - 58px);
+}
+
+.css-13cymwt-control {
+  @apply block flex-1 border-0 !bg-transparent py-3 px-4 text-gray-900 placeholder:text-gray-400 outline-none text-xs sm:text-sm sm:leading-6 rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600;
+}
+
+.css-1u9des2-indicatorSeparator,
+.css-1xc3v61-indicatorContainer {
+  display: none;
+}
+
+#wallet .wallet-adapter-button {
+  @apply !bg-second !text-main !px-4 !py-1 !rounded-full;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+.escrow::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb,
+.escrow::-webkit-scrollbar-thumb {
+  @apply bg-second rounded-full;
+}
+
+.logBg {
+  background-image: url(../public/LogingBg.svg);
+  background-size: cover;
+  background-position: bottom left;
+  min-height: calc(100vh - 57px);
+}
