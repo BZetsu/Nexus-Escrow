@@ -97,7 +97,7 @@ export default function Page() {
     try {
       console.log(form);
       console.log(form.private);
-      notify_laoding("Transaction Pending...!")
+      notify_laoding("Creating Escrow Contract!!...!")
       await initEscrow(
         anchorWallet!,
         connection,
@@ -111,7 +111,7 @@ export default function Page() {
         wallet
       );
       notify_delete();
-      notify_success("Transaction Success!")
+      notify_success("Escrow Contract Created Successfully!!")
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");      

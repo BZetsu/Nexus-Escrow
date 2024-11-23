@@ -100,6 +100,8 @@ export default function page() {
       handleCloseModal();
       setEscrowInfo((preEscrow: any) => ({...preEscrow, DeadLine: milliseconds / 1000}));
       // setForm((prevForm) => ({ ...prevForm, DeadLine: newdeadline / 1000 }));
+      await getEscrowInfosss();
+      await getApplys();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
@@ -306,6 +308,8 @@ export default function page() {
       notify_delete();
       notify_success("Transaction Success!");
       handleSaveDescription()
+      await getEscrowInfosss();
+      await getApplys();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
@@ -334,6 +338,8 @@ export default function page() {
       console.log(apiResponse);
       notify_delete();
       notify_success("Transaction Success!")
+      await getEscrowInfosss();
+      await getApplys();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
@@ -358,6 +364,8 @@ export default function page() {
       notify_delete();
       notify_success("Transaction Success!");
       setShowApproveSubmit(false);
+      await getEscrowInfosss();
+      await getApplys();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");   
@@ -385,6 +393,8 @@ export default function page() {
       );
       notify_delete();
       notify_success("Transaction Success!")
+      await getEscrowInfosss();
+      await getApplys();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");   
@@ -405,6 +415,8 @@ export default function page() {
       notify_delete();
       notify_success("Transaction Success!");
       handleOpenDispute()
+      await getEscrowInfosss();
+      await getApplys();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");   
@@ -424,6 +436,8 @@ export default function page() {
       notify_delete();
       notify_success("Transaction Success!");
       handleOpenDispute()
+      await getEscrowInfosss();
+      await getApplys();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");   
@@ -447,6 +461,8 @@ export default function page() {
       notify_delete();
       notify_success("Transaction Success!");
       setShowStartProject(false);
+      await getEscrowInfosss();
+      await getApplys();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");   
@@ -606,7 +622,7 @@ export default function page() {
                       setShowReject(false);
                       setOpenDispute(false);
                     }}
-                    className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-2"
+                    className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-1"
                   >
                     Terminate
                   </Button>
@@ -617,7 +633,7 @@ export default function page() {
                     onClick={() => {
                       terminating()
                     }}
-                    className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-2"
+                    className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-1"
                   >
                     Terminate
                   </Button>
@@ -665,7 +681,7 @@ export default function page() {
                     onClick={() => setOpen(true)}
                     className="!text-xs !px-5 !font-semibold !py-2 !bg-main !text-second !normal-case"
                   >
-                    Request new submissin
+                    Request new submission
                   </Button>
                   <Button
                     variant="contained"
@@ -764,7 +780,7 @@ export default function page() {
           <Button
             onClick={() => approveSubmit()}
             variant="contained"
-            className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-2"
+            className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-1"
           >
             Approve
           </Button>
@@ -791,7 +807,7 @@ export default function page() {
           <Button
             onClick={() => RejectSubmit()}
             variant="contained"
-            className="!normal-case !text-black !text-sm !bg-red-700 !px-8 !py-2"
+            className="!normal-case !text-black !text-sm !bg-red-700 !px-8 !py-1"
           >
             Reject
           </Button>
@@ -813,7 +829,7 @@ export default function page() {
           <Button
             onClick={() => approve()}
             variant="contained"
-            className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-2"
+            className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-1"
           >
             Start Contract
           </Button>

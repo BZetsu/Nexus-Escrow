@@ -210,9 +210,16 @@ export default function page() {
     }
   };
 
-  const output = (value: string, name: string) => {
+  const output = (value: string | undefined | null, name: string) => {
     console.log(name);
     console.log(value);
+    
+    // Special handling for payment rate
+    if (name === "Payment Rate") {
+      return value || "0";
+    }
+    
+    // Normal handling for other fields
     if (value && value.length > 0) {
       return value;
     }
@@ -439,7 +446,7 @@ export default function page() {
               className="w-5 h-5" 
               src="/_next/static/media/coin.0c914039.svg" 
             />
-            {userInfo && Number(userInfo.paymentRatePerHour)}
+            {userInfo && (Number(userInfo.paymentRatePerHour) || 0)}
           </div>
         </div>
       </div>

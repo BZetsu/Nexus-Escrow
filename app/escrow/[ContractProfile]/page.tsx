@@ -64,76 +64,44 @@ export default function page() {
       );
 
       const applyinfos = await get_apply_info(anchorWallet, connection, apply);
-      console.log("Apply infos:", applyinfos);
-
-      // Get freelancer's database info
-      if (applyinfos?.user) {
-        try {
-          // Get user's database info using their public key
-          const freelancerInfo = await backendApi.get(
-            `/nexus-user/${applyinfos.user.toBase58()}`
-          );
-          console.log("Freelancer database info:", freelancerInfo);
-          
-          if ((freelancerInfo as any)?.data) {
-            // Store both blockchain and database info
-            applyinfos.userInfo = (freelancerInfo as any).data;
-            applyinfos.freelancerAddress = applyinfos.user.toBase58();
-          }
-        } catch (error) {
-          console.log("Error fetching freelancer database info:", error);
-        }
-      }
 
       setApplyInfo(applyinfos);
 
     } catch(e) {
-      console.log("Error in getApply:", e);
+      console.log(e);
     }
   }
 
   const getEscrowInfos = async () => {
     try {
-      // const address = searchParams.get("escrow");
-      console.log(pathname);
       const address = pathname.replace("/escrow/", "");
       const escrow = new web3.PublicKey(address);
       const info = await getEscrowInfo(anchorWallet, connection, escrow);
-      console
+      
+      // Get founder's info from blockchain
       const founder_info = await get_userr_info(
         anchorWallet,
         connection,
         info!.founder
       );
-      info!.escrow = escrow;
 
-      const PROGRAM_ID = new web3.PublicKey(
-        "3GKGywaDKPQ6LKXgrEvBxLAdw6Tt8PvGibbBREKhYDfD"
+      // Get founder's info from database using the correct endpoint
+      const founderDatabaseInfo = await backendApi.get(
+        `/nexus-user/${info!.founder.toBase58()}`
       );
 
-      const [freelancer] = web3.PublicKey.findProgramAddressSync(
-        [anchorWallet!.publicKey.toBuffer(), Buffer.from(USER_PREFIX)],
-        PROGRAM_ID
-      );
+      info!.founderInfo = {
+        ...founder_info,
+        image: founderDatabaseInfo?.data?.image || dragon.src,  // Use database image first
+        name: founderDatabaseInfo?.data?.name || founder_info?.name || "--"
+      };
 
-      const freelancer_info = await get_userr_info(
-        anchorWallet,
-        connection,
-        freelancer
-      );
-
-      const databaseEscrowInfo = await backendApi.get(`/escrow/${address}`);
-      console.log(databaseEscrowInfo);
-      console.log("databaseEscrowInfo");
-
-      setEscrowDateInfo((databaseEscrowInfo as any)!.data);
-      info!.founderInfo = founder_info;
-      info!.freelancer = freelancer_info;
-      console.log("infoOOOOOOOOOOOO " + info);
-      console.log(info);
       setEscrowInfo(info);
-      // console.log(info, "info", formatTime(info!.deadline));
-      setTelegram(freelancer_info!.telegramId);
+
+      // Get escrow details
+      const databaseEscrowInfo = await backendApi.get(`/escrow/${address}`);
+      setEscrowDateInfo((databaseEscrowInfo as any)!.data);
+
     } catch (e) {
       console.log(e);
     }
@@ -144,7 +112,7 @@ export default function page() {
       if (telegram.length == 0) {
         return console.log("need telegram first");
       }
-      notify_laoding("Applying to work...")
+      notify_laoding("Transaction Pending...!")
       console.log(escrowInfo)
       const tx = await FreelacerApply(
         anchorWallet,
@@ -157,24 +125,24 @@ export default function page() {
         Number(escrowInfo.deadline)        
       );
       
-      // Update states
+      notify_delete();
+      notify_success("Transaction Success!");
+      handleCloseModal();
+      
+      // Quick refresh after success
       await getEscrowInfos();
       await getApply();
-      
-      notify_delete();
-      notify_success("Applied Successfully!")
-      handleCloseModal();
 
     } catch (e) {
       notify_delete();
-      notify_error("Application Failed!");
+      notify_error("Transaction Failed!");
       console.log(e);
     }
   };
 
   const cancel_apply = async () => {
     try {
-      notify_laoding("Canceling Application...!")
+      notify_laoding("Transaction Pending...!")
       console.log(escrowInfo)
       const tx = await closeApply(
         anchorWallet,
@@ -183,12 +151,12 @@ export default function page() {
         escrowInfo.escrow,
       );
       
-      // Just update the relevant states
+      notify_delete();
+      notify_success("Transaction Success!")
+      
+      // Quick refresh after success
       await getEscrowInfos();
       await getApply();
-      
-      notify_delete();
-      notify_success("Application Canceled!")
 
     } catch (e) {
       notify_delete();
@@ -264,9 +232,13 @@ export default function page() {
           <Card className="!p-0 sm:col-span-2 overflow-hidden ">
             <div className="flex sm:flex-col p-2">
               <Image
-                src={dragon}
-                alt="dragon"
+                src={escrowInfo?.founderInfo?.image || dragon.src}
+                alt="profile"
+                width={500}
+                height={500}
                 className="w-[100px] p-1 sm:p-0 sm:w-full rounded-xl object-cover object-center"
+                priority
+                unoptimized
               />
 
               <Stack pt={2} spacing={3} px={1}>

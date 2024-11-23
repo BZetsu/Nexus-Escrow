@@ -86,7 +86,7 @@ export default function FirstForm({ handleGoToStep }: any) {
   const onSubmit: SubmitHandler<OnboardingScreenForm> = async (data) => {
     if (!isValid) return;
 
-    const loadingToastId = notify_laoding("Transaction Pending...!");
+    const loadingToastId = notify_laoding("Creating Profile...!");
     try {
       await init_user(
         anchorWallet,
@@ -111,7 +111,7 @@ export default function FirstForm({ handleGoToStep }: any) {
 
       // Proceed to next step
       handleGoToStep("second");
-      notify_success("Transaction Success!");
+      notify_success("Profile Created Successfully!!");
       notify_delete(loadingToastId);
     } catch (e) {
       notify_delete(loadingToastId);

@@ -23,8 +23,17 @@ export async function get_userr_info(
 
         const program = new Program(idl, idl.metadata.address, provider);
         const account = await program.account.user.fetchNullable(user);
-        console.log(account);
-        console.log("account");
+        console.log("Raw blockchain account:", account);
+        console.log("Image field from blockchain:", account?.image);
+        console.log("All user fields:", {
+            name: account?.name,
+            image: account?.image,
+            twitter: account?.twitter,
+            telegramId: account?.telegramId,
+            profileOverview: account?.profileOverview,
+            levelOfExpertise: account?.levelOfExpertise,
+            category: account?.category
+        });
         return account;
     } catch (e) {
         console.log(e);
