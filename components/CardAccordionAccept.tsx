@@ -276,7 +276,7 @@ export default function CardAccordionAccept({
                 onClick={() => RequestNewSubmitions()}
                 className="!normal-case !text-xs !py-3 !bg-green-500 !text-white !col-span-1 !rounded-md"
               >
-                Request New Submition
+                Request New Submission
               </Button>
               </CardAnimation>
               }

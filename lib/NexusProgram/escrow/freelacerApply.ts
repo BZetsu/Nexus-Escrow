@@ -69,7 +69,7 @@ export async function FreelacerApply(
   console.log(hash);
 
   const apiResponse = await backendApi.post('/escrow/apply', {
-    applicationAddress : apply.toBase58(),
+    applicationAddress: apply.toBase58(),
     contactName,
     amount,
     description,
@@ -77,7 +77,8 @@ export async function FreelacerApply(
     escrowAddress: escrow.toBase58(),
     freelancerAddress: freelancer.toBase58(),
     status: "Proccessing",
-    deadline
+    deadline,
+    userImage: null
   });
   //   if(!apiResponse) {console.log('Do something')}
 

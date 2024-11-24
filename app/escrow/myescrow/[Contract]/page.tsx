@@ -98,10 +98,8 @@ export default function page() {
       notify_delete();
       notify_success("Transaction Success!");
       handleCloseModal();
-      setEscrowInfo((preEscrow: any) => ({...preEscrow, DeadLine: milliseconds / 1000}));
-      // setForm((prevForm) => ({ ...prevForm, DeadLine: newdeadline / 1000 }));
       await getEscrowInfosss();
-      await getApplys();
+      setEscrowInfo((preEscrow: any) => ({...preEscrow, DeadLine: milliseconds / 1000}));
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
@@ -255,7 +253,7 @@ export default function page() {
 
   useEffect(() => {
     if (escrowInfo && escrowDateInfo) {
-      setTitleInput(escrowInfo.contractName || "Build a team dashboard");
+      setTitleInput(escrowInfo.contractName || "Contract Title");
       setDescriptionInput(escrowDateInfo.description || "No description available");
       setOriginalDescription(
         escrowInfo.description || "No description available"
@@ -290,7 +288,7 @@ export default function page() {
 
   const updateDescription = async () => {
     try {
-      notify_laoding("Transaction Pending...!")
+      notify_laoding("Updating Description...!")
       const address = pathname.replace("/escrow/myescrow/", "");
       console.log(escrowDateInfo)
 
@@ -306,20 +304,18 @@ export default function page() {
       );
       console.log(apiResponse);
       notify_delete();
-      notify_success("Transaction Success!");
+      notify_success("Description Updated!");
       handleSaveDescription()
-      await getEscrowInfosss();
-      await getApplys();
     } catch (e) {
       notify_delete();
-      notify_error("Transaction Failed!");
+      notify_error("Update Failed!");
       console.log(e);
     }
   }
 
   const privates = async (privat: boolean) => {
     try {
-      notify_laoding("Transaction Pending...!")
+      notify_laoding("Switching Privacy...!")
       const address = pathname.replace("/escrow/myescrow/", "");
       console.log(escrowDateInfo)
       console.log(privat);
@@ -337,19 +333,17 @@ export default function page() {
         }))
       console.log(apiResponse);
       notify_delete();
-      notify_success("Transaction Success!")
-      await getEscrowInfosss();
-      await getApplys();
+      notify_success("Privacy Switched!")
     } catch (e) {
       notify_delete();
-      notify_error("Transaction Failed!");
+      notify_error("Switch Failed!");
       console.log(e);
     }
   }
 
   const approveSubmit = async () => {
     try {
-      notify_laoding("Transaction Pending...!");
+      notify_laoding("Approving Submission...!");
       console.log(escrowInfo);
       console.log(escrowInfo.escrow.toBase58());
       console.log(escrowInfo.freelancerInfo.address.toBase58());
@@ -362,13 +356,13 @@ export default function page() {
         escrowInfo.freelancerInfo.address
       );
       notify_delete();
-      notify_success("Transaction Success!");
+      notify_success("Submission Approved!");
       setShowApproveSubmit(false);
       await getEscrowInfosss();
       await getApplys();
     } catch (e) {
       notify_delete();
-      notify_error("Transaction Failed!");   
+      notify_error("Approval Failed!");   
       console.log(e);
     }
   };
@@ -376,7 +370,7 @@ export default function page() {
   const RejectSubmit = async () => {
     try {
 
-      notify_laoding("Transaction Pending...!");
+      notify_laoding("Rejecting Submission...!");
       const dataa = escrowInfo.reciever
       ? applys?.filter(
           (ap: any) =>
@@ -392,7 +386,7 @@ export default function page() {
         dataa![0].pubkey
       );
       notify_delete();
-      notify_success("Transaction Success!")
+      notify_success("Submission Rejected!")
       await getEscrowInfosss();
       await getApplys();
     } catch (e) {
@@ -404,7 +398,7 @@ export default function page() {
 
   const OpenDispute = async () => {
     try {
-      notify_laoding("Transaction Pending...!");
+      notify_laoding("Opening Dispute...!");
       const tx = await founderOpenDispute(
         anchorWallet,
         connection,
@@ -413,10 +407,9 @@ export default function page() {
         escrowInfo.reciever,
       );
       notify_delete();
-      notify_success("Transaction Success!");
+      notify_success("Dispute Opened!");
       handleOpenDispute()
       await getEscrowInfosss();
-      await getApplys();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");   
@@ -426,7 +419,7 @@ export default function page() {
   
   const terminating = async () => {
     try {
-      notify_laoding("Transaction Pending...!");
+      notify_laoding("Terminating Contract...!");
       const tx = await cancelEscrow(
         anchorWallet,
         connection,
@@ -434,7 +427,7 @@ export default function page() {
         wallet,
       );
       notify_delete();
-      notify_success("Transaction Success!");
+      notify_success("Contract Terminated!");
       handleOpenDispute()
       await getEscrowInfosss();
       await getApplys();
@@ -447,7 +440,7 @@ export default function page() {
 
   const approve = async () => {
     try {
-      notify_laoding("Transaction Pending...!");
+      notify_laoding("Starting Contract...!");
       // console.log(escrow.toBase58());
       const apply = (applys!.filter((escrow: any) => escrow.pubkey.toBase58() == select.toBase58()))[0].pubkey;
 
@@ -459,7 +452,7 @@ export default function page() {
         escrowInfo.escrow
       );
       notify_delete();
-      notify_success("Transaction Success!");
+      notify_success("Contract Started!");
       setShowStartProject(false);
       await getEscrowInfosss();
       await getApplys();
@@ -622,7 +615,7 @@ export default function page() {
                       setShowReject(false);
                       setOpenDispute(false);
                     }}
-                    className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-1"
+                    className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-2"
                   >
                     Terminate
                   </Button>
@@ -633,7 +626,7 @@ export default function page() {
                     onClick={() => {
                       terminating()
                     }}
-                    className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-1"
+                    className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-2"
                   >
                     Terminate
                   </Button>
@@ -681,7 +674,7 @@ export default function page() {
                     onClick={() => setOpen(true)}
                     className="!text-xs !px-5 !font-semibold !py-2 !bg-main !text-second !normal-case"
                   >
-                    Request new submission
+                    Request new submissin
                   </Button>
                   <Button
                     variant="contained"
@@ -780,7 +773,7 @@ export default function page() {
           <Button
             onClick={() => approveSubmit()}
             variant="contained"
-            className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-1"
+            className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-2"
           >
             Approve
           </Button>
@@ -807,7 +800,7 @@ export default function page() {
           <Button
             onClick={() => RejectSubmit()}
             variant="contained"
-            className="!normal-case !text-black !text-sm !bg-red-700 !px-8 !py-1"
+            className="!normal-case !text-white !text-sm !bg-red-700 !px-8 !py-2"
           >
             Reject
           </Button>
@@ -829,7 +822,7 @@ export default function page() {
           <Button
             onClick={() => approve()}
             variant="contained"
-            className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-1"
+            className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-2"
           >
             Start Contract
           </Button>

@@ -370,18 +370,15 @@ export default function page() {
                   width={500}
                   height={350}
                   className="w-full h-auto object-cover rounded-xl 
-                    max-w-[300px] h-[120px]                /* Base mobile - reduced height */
-                    sm:max-w-[400px] sm:h-[200px]         /* Small screens - reduced */
-                    md:max-w-[300px] md:h-[180px]         /* Medium - further reduced */
-                    lg:max-w-[500px] lg:h-[350px]         /* Large - reduced by 100 from 450px */
+                    max-w-[250px] h-[100px]                /* Base mobile - even smaller */
+                    sm:max-w-[350px] sm:h-[180px]         /* Small screens - reduced */
+                    md:max-w-[300px] md:h-[160px]         /* Medium - smaller */
+                    lg:max-w-[450px] lg:h-[300px]         /* Large - reduced */
                     
                     /* Special breakpoint handling */
                     @media (width: 670px) {
-                      max-width: 200px                     /* Reduced by another 100 */
-                      height: 150px                        /* Reduced height */
-                    }
-                    @media (min-width: 671px) {
-                      max-width: 400px                     /* Increased by 200 */
+                      max-width: 180px                     
+                      height: 130px                        
                     }"
                   priority
                   unoptimized

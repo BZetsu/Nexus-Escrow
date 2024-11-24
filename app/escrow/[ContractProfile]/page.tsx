@@ -29,12 +29,21 @@ import { FaFileAlt } from "react-icons/fa";
 import { FaFile } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
 
+interface UserProfileResponse {
+  data: {
+    profilePicture: string;
+    username: string;
+    // other fields...
+  }
+}
+
 export default function page() {
   const [open, setOpen] = useState(false);
   const [applyInfo, setApplyInfo] = useState<any>();
   const [telegram, setTelegram] = useState<string>("");
   const [escrowInfo, setEscrowInfo] = useState<any>();
   const [escrowDateInfo, setEscrowDateInfo] = useState<any>();
+  const [founderProfilePic, setFounderProfilePic] = useState<string>("");
 
   function handleCloseModal() {
     setOpen(false);
@@ -74,36 +83,68 @@ export default function page() {
 
   const getEscrowInfos = async () => {
     try {
+      // const address = searchParams.get("escrow");
+      console.log(pathname);
       const address = pathname.replace("/escrow/", "");
       const escrow = new web3.PublicKey(address);
       const info = await getEscrowInfo(anchorWallet, connection, escrow);
-      
-      // Get founder's info from blockchain
+      console
       const founder_info = await get_userr_info(
         anchorWallet,
         connection,
         info!.founder
       );
+      info!.escrow = escrow;
 
-      // Get founder's info from database using the correct endpoint
-      const founderDatabaseInfo = await backendApi.get(
-        `/nexus-user/${info!.founder.toBase58()}`
+      const PROGRAM_ID = new web3.PublicKey(
+        "3GKGywaDKPQ6LKXgrEvBxLAdw6Tt8PvGibbBREKhYDfD"
       );
 
-      info!.founderInfo = {
-        ...founder_info,
-        image: founderDatabaseInfo?.data?.image || dragon.src,  // Use database image first
-        name: founderDatabaseInfo?.data?.name || founder_info?.name || "--"
-      };
+      const [freelancer] = web3.PublicKey.findProgramAddressSync(
+        [anchorWallet!.publicKey.toBuffer(), Buffer.from(USER_PREFIX)],
+        PROGRAM_ID
+      );
 
-      setEscrowInfo(info);
+      const freelancer_info = await get_userr_info(
+        anchorWallet,
+        connection,
+        freelancer
+      );
 
-      // Get escrow details
       const databaseEscrowInfo = await backendApi.get(`/escrow/${address}`);
-      setEscrowDateInfo((databaseEscrowInfo as any)!.data);
+      console.log(databaseEscrowInfo);
+      console.log("databaseEscrowInfo");
 
+      setEscrowDateInfo((databaseEscrowInfo as any)!.data);
+      info!.founderInfo = founder_info;
+      info!.freelancer = freelancer_info;
+      console.log("infoOOOOOOOOOOOO " + info);
+      console.log(info);
+      setEscrowInfo(info);
+      // console.log(info, "info", formatTime(info!.deadline));
+      setTelegram(freelancer_info!.telegramId);
+
+      if (founder_info && founder_info.name) {
+        console.log("Found founder name:", founder_info.name);
+        await getFounderProfile(founder_info.name);
+      }
     } catch (e) {
       console.log(e);
+    }
+  };
+
+  const getFounderProfile = async (username: string) => {
+    try {
+      console.log("Fetching profile for username:", username);
+      const response = await backendApi.get<UserProfileResponse>(`/users/by-username/${username}`);
+      console.log("API Response:", response);
+      
+      if (response && response.data && response.data.profilePicture) {
+        console.log("Profile picture URL:", response.data.profilePicture);
+        setFounderProfilePic(response.data.profilePicture);
+      }
+    } catch (e) {
+      console.log("Error fetching founder profile:", e);
     }
   };
 
@@ -112,7 +153,7 @@ export default function page() {
       if (telegram.length == 0) {
         return console.log("need telegram first");
       }
-      notify_laoding("Transaction Pending...!")
+      notify_laoding("Applying to work...!")
       console.log(escrowInfo)
       const tx = await FreelacerApply(
         anchorWallet,
@@ -124,25 +165,18 @@ export default function page() {
         escrowInfo.contractName,
         Number(escrowInfo.deadline)        
       );
-      
       notify_delete();
-      notify_success("Transaction Success!");
-      handleCloseModal();
-      
-      // Quick refresh after success
-      await getEscrowInfos();
-      await getApply();
-
+      notify_success("Applied Successfully!")
     } catch (e) {
       notify_delete();
-      notify_error("Transaction Failed!");
+      notify_error("Application Failed!");
       console.log(e);
     }
   };
 
   const cancel_apply = async () => {
     try {
-      notify_laoding("Transaction Pending...!")
+      notify_laoding("Canceling Application...!")
       console.log(escrowInfo)
       const tx = await closeApply(
         anchorWallet,
@@ -150,14 +184,8 @@ export default function page() {
         wallet,
         escrowInfo.escrow,
       );
-      
       notify_delete();
       notify_success("Transaction Success!")
-      
-      // Quick refresh after success
-      await getEscrowInfos();
-      await getApply();
-
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
@@ -196,9 +224,15 @@ export default function page() {
               className="text-base sm:text-xl font-[600] pt-2"
             >
               <div className="flex-1 text-base sm:text-2xl">
-                {escrowInfo && escrowInfo.contractName !== ""
-                  ? escrowInfo.contractName
-                  : "Build a team dashboard"}
+                {escrowInfo && escrowInfo.contractName !== "" ? (
+                  <span className="text-black">
+                    {escrowInfo.contractName}
+                  </span>
+                ) : (
+                  <span className="text-gray-500/70">
+                    Contract Title
+                  </span>
+                )}
               </div>
 
               <Stack flexDirection="row" alignItems="start" gap={0.4}>
@@ -232,13 +266,11 @@ export default function page() {
           <Card className="!p-0 sm:col-span-2 overflow-hidden ">
             <div className="flex sm:flex-col p-2">
               <Image
-                src={escrowInfo?.founderInfo?.image || dragon.src}
+                src={founderProfilePic || dragon}
                 alt="profile"
                 width={500}
                 height={500}
                 className="w-[100px] p-1 sm:p-0 sm:w-full rounded-xl object-cover object-center"
-                priority
-                unoptimized
               />
 
               <Stack pt={2} spacing={3} px={1}>
@@ -296,7 +328,7 @@ export default function page() {
 
             <Card className="mt-4">
               <Button
-                className="!mt-4 w-full !bg-white hover:bg-opacity-0 shadow-none !normal-case"
+                className="!mt-4 w-full !bg-white hover:bg-opacity-0 shadow-none !normal-case border border-gray-300"
                 style={{ display: "unset" }}
               >
                 <span onClick={() => links(escrowInfo.materials)}>
@@ -399,3 +431,4 @@ export default function page() {
     </div>
   );
 }
+

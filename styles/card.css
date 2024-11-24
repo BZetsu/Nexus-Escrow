@@ -1,0 +1,36 @@
+.responsive-card {
+  width: 100%;
+  max-width: 500px;
+  min-height: 600px;
+  margin: 0 auto;
+}
+
+.card-image {
+  max-height: 60%;
+  width: 100%;
+}
+
+@media (max-width: 500px) {
+  .responsive-card {
+    width: 300px;
+    height: 500px;
+  }
+  
+  .card-image {
+    max-height: 50%;
+  }
+}
+
+@media (max-width: 400px) {
+  .responsive-card {
+    width: 250px;
+    height: 450px;
+  }
+}
+
+@media (max-width: 300px) {
+  .responsive-card {
+    width: 200px;
+    height: 400px;
+  }
+} 

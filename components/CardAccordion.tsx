@@ -48,7 +48,7 @@ export default function CardAccordion({
         <Stack spacing={2}>
           {data.map((el: any, i: number) => (
             <CardApp
-              data={data}
+              data={el}
               key={i}
               title={el.userName}
               role={el.role}
@@ -60,6 +60,7 @@ export default function CardAccordion({
               type2="Start Contract"
               startProject={startProject}
               setSelect={setSelect}
+              image={el.image}
             />
           ))}
         </Stack>

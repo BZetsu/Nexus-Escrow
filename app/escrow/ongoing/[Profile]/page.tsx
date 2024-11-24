@@ -57,6 +57,17 @@ export default function page() {
   const wallet = useWallet();
   const { connection } = useConnection();
 
+  const [userData, setUserData] = useState<any>(null);
+
+  const getUserData = async (userId: string) => {
+    try {
+      const response = await backendApi.get(`/users/${userId}`);
+      setUserData(response);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   const getApply = async () => {
     try {
       const PROGRAM_ID = new web3.PublicKey(
@@ -190,6 +201,12 @@ export default function page() {
   }, [anchorWallet]);
 
   useEffect(() => {
+    if (escrow_info?.founderInfo?.userId) {
+      getUserData(escrow_info.founderInfo.userId);
+    }
+  }, [escrow_info]);
+
+  useEffect(() => {
     if (escrow_info) {
       setDeadline(timeLeft(escrow_info.deadline));
     }
@@ -245,22 +262,28 @@ export default function page() {
         </div>
 
         <div className="grid sm:grid-cols-5 gap-4 mt-5">
-          <Card className="!p-0 sm:col-span-2 overflow-hidden h-full">
+          <Card className="!p-0 sm:col-span-2 overflow-hidden h-full 
+            max-w-[300px] sm:max-w-none 
+            mx-auto w-[95%] 
+            [@media(min-width:500px)]:w-[400px] 
+            sm:w-full"
+          >
             <div className="p-2">
               <Image
-                src={dragon}
-                alt="dragon"
-                className="w-full rounded-xl object-cover object-center"
+                src={userData?.profileImage || dragon}
+                alt={escrow_info?.founderInfo?.name || "Profile"}
+                className="w-full h-[180px] [@media(min-width:500px)]:h-[200px] sm:h-[250px] rounded-xl object-cover object-center"
               />
             </div>
 
-            <Stack py={1} spacing={3} px={2}>
+            <Stack py={2} spacing={2} px={3}>
               <Stack
                 flexDirection="row"
                 justifyContent="space-between"
                 alignItems="center"
+                className="flex-wrap gap-2"
               >
-                <div className="text-xl font-[600] line-clamp-1 font-myanmar_khyay">
+                <div className="text-base [@media(min-width:500px)]:text-lg sm:text-xl font-[600] line-clamp-1 font-myanmar_khyay break-all flex-1">
                   {escrow_info ? escrow_info.founderInfo.name : "--"}
                 </div>
                 {escrow_info && escrow_info.founderInfo.twitter.length > 0 ? (
@@ -268,27 +291,24 @@ export default function page() {
                     onClick={() =>
                       links(escrow_info.founderInfo.twitter.length)
                     }
+                    className="cursor-pointer"
                   >
-                    <XIcon className="text-lg" />
+                    <XIcon className="text-lg sm:text-xl" />
                   </span>
                 ) : (
                   <span>
-                    <XIcon className="text-lg" />
+                    <XIcon className="text-lg sm:text-xl" />
                   </span>
                 )}
               </Stack>
 
-              {/* <div className="text-[11px] font-[300] line-clamp-1 py-1">
-                0 Leaderboard rating
-              </div> */}
-
-              <Stack flexDirection="row" justifyContent="center" pt={"15%"}>
+              <Stack flexDirection="row" justifyContent="center" className="w-full mt-3 [@media(min-width:500px)]:mt-4 sm:mt-8">
                 {escrow_info &&
                   escrow_info.telegramLink.length > 0 ? (
                   <Button
                     onClick={() => links(escrow_info.telegramLink)}
                     variant="contained"
-                    className="!text-sm !px-10 !py-2 !capitalize !font-semibold !bg-second !w-56"
+                    className="!text-sm !px-4 [@media(min-width:500px)]:!px-6 sm:!px-10 !py-2 !capitalize !font-semibold !bg-second !w-full sm:!w-56"
                   >
                     Start Chat
                   </Button>
@@ -296,7 +316,7 @@ export default function page() {
                   <Button
                     variant="contained"
                     disabled={true}
-                    className="!text-sm !px-10 !py-2 !capitalize !font-semibold !bg-first !w-56"
+                    className="!text-sm !px-4 [@media(min-width:500px)]:!px-6 sm:!px-10 !py-2 !capitalize !font-semibold !bg-first !w-full sm:!w-56"
                   >
                     Start Chat
                   </Button>
@@ -325,7 +345,7 @@ export default function page() {
                 
                 <Card className="mt-4 !py-3">
                   <Card className="text-xs text-center !shadow-none !border !border-textColor">
-                        Your submition has send, Wait until the Client Approve it within the next 14 days otherwise the funds will be released to you
+                        Your submission has been sent, Wait until the Client Approve it within the next 14 days otherwise the funds will be released to you
                       {/* Your submission was approved and pay has been made to your
                   wallet, project will auto terminate in 24 hours */}
                     </Card>

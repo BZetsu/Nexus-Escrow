@@ -33,14 +33,25 @@ export default function CardApp({
     >
       <Stack flexDirection="row" alignItems="center" gap={1}>
         <Image
-          src={DragonImg}
-          alt="dragon"
+          src={`https://new-nexus-platform-backend.onrender.com/api/v1/bucket/upload/${data.user}`}
+          alt={title || "Applicant"}
+          width={80}
+          height={56}
           className="w-20 h-14 rounded-lg object-cover object-center"
+          priority
+          unoptimized
+          onError={(e) => {
+            e.currentTarget.src = DragonImg.src;
+          }}
         />
         <Stack spacing={0.4}>
           <div
             className="text-base cursor-pointer font-[400] line-clamp-1"
-            onClick={() => router.push("/escrow/myescrow/apply/" + data[0].user.toBase58())}
+            onClick={() => {
+              if (data?.user) {
+                router.push("/escrow/myescrow/apply/" + data.user.toBase58())
+              }
+            }}
           >
             {title}
           </div>
