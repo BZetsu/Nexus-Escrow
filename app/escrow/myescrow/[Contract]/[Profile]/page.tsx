@@ -1,3 +1,4 @@
+
 "use client";
 
 import Card from "@/components/Card";
@@ -60,18 +61,35 @@ export default function page() {
 
   const get_user_info = async () => {
     try {
-      // Get the freelancer's address from the URL
       const pathSegments = pathname.split('/');
-      const freelancerAddress = pathSegments[pathSegments.length - 1];
-      console.log("Freelancer address:", freelancerAddress);
+      const userId = pathSegments[pathSegments.length - 1];
+      console.log("Looking up userId:", userId);
 
-      if (!freelancerAddress) {
-        console.log("No freelancer address found");
+      // Get all users and filter
+      const response = await backendApi.get('/nexus-user');
+      console.log("Database response:", response);
+
+      // Find the specific user with matching userId
+      const userData = (response as any)?.data?.find(
+        (user: any) => user.userId === userId
+      );
+
+      if (!userData) {
+        console.log("No user found with userId:", userId);
         return;
       }
 
-      // Get freelancer's blockchain info first
-      const freelancerPubKey = new web3.PublicKey(freelancerAddress);
+      console.log("Found user in database:", userData);
+      setUserInfo(userData);
+
+      if (!userData.address) {
+        console.log("No wallet address found for user");
+        return;
+      }
+
+      // For Zetsu 3, this should be "8in9sHxip8WUFbc9xaSYPUB1uTQhqgZJ9NZarSy4ecHt"
+      console.log("Using wallet address for blockchain lookup:", userData.address);
+      const freelancerPubKey = new web3.PublicKey(userData.address);
       const [userPDA] = web3.PublicKey.findProgramAddressSync(
         [freelancerPubKey.toBuffer(), Buffer.from(USER_PREFIX)],
         PROGRAM_ID
@@ -83,26 +101,11 @@ export default function page() {
         userPDA
       );
 
-      console.log("Freelancer blockchain info:", freelancer_info);
+      console.log("Blockchain data for user:", freelancer_info);
       setInfo(freelancer_info);
 
-      // Get freelancer's database info using their public key
-      const databaseEscrowInfo = await backendApi.get(
-        `/nexus-user/${freelancerPubKey.toBase58()}`
-      );
-
-      console.log("Freelancer database info:", databaseEscrowInfo);
-
-      // Set database info with proper error handling
-      if ((databaseEscrowInfo as any)?.data) {
-        await new Promise(resolve => {
-          setUserInfo((databaseEscrowInfo as any).data);
-          setTimeout(resolve, 500);
-        });
-      }
-
     } catch (e) {
-      console.log("Error fetching freelancer info:", e);
+      console.log("Error in get_user_info:", e);
     }
   };
 
@@ -348,8 +351,8 @@ export default function page() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 px-1">
             <div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.category, "Category")}</div>
-              {/* <div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.country, "Country")}</div> */}
-              {/* <div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.timezone, "Time Zone")}</div> */}
+              {<div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.country, "Country")}</div>}
+              {<div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.timezone, "Time Zone")}</div>}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 px-1">
