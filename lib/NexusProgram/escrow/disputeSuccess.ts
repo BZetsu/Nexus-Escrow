@@ -10,6 +10,17 @@ import { get_userr_info } from './utils.ts/get_userr_info';
 import { backendApi } from '@/lib/utils/api.util';
 const idl = require('../../../data/nexus.json');
 
+interface ReceiverInfo {
+  name: any
+  image: any
+  twitter: any
+  telegramId: any
+  profileOverview: any
+  levelOfExpertise: any
+  category: any
+  publicKey: web3.PublicKey
+}
+
 export async function disputeSuccess(
   anchorWallet: any,
   connection: web3.Connection,
@@ -24,14 +35,6 @@ export async function disputeSuccess(
   const PROGRAM_ID = new web3.PublicKey(idl.metadata.address);
   const program = new Program(idl, idl.metadata.address, provider);
 
-  // const [reciever] = web3.PublicKey.findProgramAddressSync(
-  //     [
-  //         anchorWallet.publicKey.toBuffer(),
-  //         Buffer.from(USER_PREFIX),
-  //     ],
-  //     PROGRAM_ID
-  // );
-
   const [nexusEscrow] = web3.PublicKey.findProgramAddressSync(
     [Buffer.from(NEXUSESCROW_V1)],
     PROGRAM_ID
@@ -43,7 +46,7 @@ export async function disputeSuccess(
 
   const [userMintTokenAccount] = web3.PublicKey.findProgramAddressSync(
     [
-      receiverInfo!.address.toBuffer(),
+      receiverInfo!.publicKey.toBuffer(),
       TOKEN_PROGRAM_ID.toBuffer(),
       MINT.toBuffer(),
     ],
@@ -64,7 +67,7 @@ export async function disputeSuccess(
     .accounts({
       escrow: escrow,
       reciever: reciever,
-      recieverAddress: receiverInfo!.address,
+      recieverAddress: reciever,
       authority: anchorWallet.publicKey,
       from: NexusEscrowTokenAccount,
       to: userMintTokenAccount,
