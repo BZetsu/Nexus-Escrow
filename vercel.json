@@ -1,0 +1,22 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME": "tech-aku"
+  },
+  "images": {
+    "domains": ["res.cloudinary.com"],
+    "sizes": [16, 32, 48, 64, 96, 128, 256, 384],
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "res.cloudinary.com"
+      }
+    ]
+  }
+} 

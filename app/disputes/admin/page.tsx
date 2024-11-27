@@ -8,21 +8,26 @@ import { useState } from "react";
 export default function Home() {
   const [disptueState, setDisputeState] = useState(true);
 
-  const [disputes, setDisputed] = useState([
+  const [disputes, setDisputes] = useState<Array<{
+    id: number;
+    ClinetName: string;
+    FreelancerName: string;
+    isResolved: boolean;
+  }>>([
     { id: 1, ClinetName: "Zetsu", FreelancerName: "Manay", isResolved: false },
     { id: 2, ClinetName: "Zetsu", FreelancerName: "Manay", isResolved: false },
   ]);
 
   const handleCheckboxChange = (id: number) => {
-    setDisputed(
+    setDisputes(
       disputes.map((el) =>
         el.id === id ? { ...el, isResolved: !el.isResolved } : el
       )
     );
   };
 
-  const ResolvedDisptued = [...disputes].filter((x) => x.isResolved);
-  const NotResolvedDisptued = [...disputes].filter((x) => !x.isResolved);
+  const ResolvedDisputes = [...disputes].filter((x) => x.isResolved);
+  const NotResolvedDisputes = [...disputes].filter((x) => !x.isResolved);
 
   return (
     <div className="bg-gray-100 min-h-screen p-6 md:p-10">
@@ -112,7 +117,7 @@ export default function Home() {
         <div className="overflow-x-auto mt-8">
           <div className="space-y-4">
             {!disptueState &&
-              ResolvedDisptued.map((el, index) => (
+              ResolvedDisputes.map((el, index) => (
                 <div
                   key={index}
                   className={`flex justify-center sm:justify-between flex-col sm:flex-row gap-5 border-b border-textColor/50 pb-5`}
@@ -144,7 +149,7 @@ export default function Home() {
               ))}
 
             {disptueState &&
-              NotResolvedDisptued.map((el, index) => (
+              NotResolvedDisputes.map((el, index) => (
                 <div
                   key={index}
                   className={`flex justify-center sm:justify-between flex-col sm:flex-row gap-5 border-b border-textColor/50 pb-5`}

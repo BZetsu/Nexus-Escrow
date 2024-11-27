@@ -37,6 +37,26 @@ import { web3 } from "@project-serum/anchor";
 import { backendApi } from "@/lib/utils/api.util";
 import { getFreeLacerEscrow } from "@/lib/NexusProgram/escrow/utils.ts/getFreelacerEscrow";
 
+interface EditFormState {
+  username: string;
+  roleDescription: string;
+  levelOfExpertise: string;
+  paymentRate: string;
+  profileOverview: string;
+  category: string;
+  country: string;
+  timeZone: string;
+  linkResume: string;
+  linkPortfolio: string;
+  twitterId: string;
+  others: string;
+  nigotion: boolean;
+  discord_id: string;
+  telegram_id: string;
+  website: string;
+  linkedin: string;
+}
+
 export default function page() {
   const menu = ["Profile Summary", "Nexus Jobs", "Payment History"];
 
@@ -56,18 +76,24 @@ export default function page() {
 
   const [showEdit, setShowEdit] = useState(false);
 
-  const [editForm, setEditForm] = useState<any>({
-    username: null,
-    roleDescription: null,
-    levelOfExpertise: null,
-    paymentRate: null,
+  const [editForm, setEditForm] = useState<EditFormState>({
+    username: "",
+    roleDescription: "",
+    levelOfExpertise: "",
+    paymentRate: "",
     profileOverview: profileOverview,
-    category: null,
-    country: null,
-    timeZone: null,
-    linkResume: null,
-    linkPortfolio: null,
-    twitterId: null,
+    category: "",
+    country: "",
+    timeZone: "",
+    linkResume: "",
+    linkPortfolio: "",
+    twitterId: "",
+    others: "",
+    nigotion: false,
+    discord_id: "",
+    telegram_id: "",
+    website: "",
+    linkedin: ""
   });
 
   const theme = createTheme({
@@ -98,20 +124,26 @@ export default function page() {
         `/nexus-user/${anchorWallet?.publicKey.toBase58()}`
       );
 
-      await new Promise(resolve => {
+      await new Promise<void>((resolve) => {
         setUserInfo((databaseEscrowInfo as any).data);
         setEditForm({
-          username: (databaseEscrowInfo as any)!.data.name,
-          roleDescription: (databaseEscrowInfo as any)!.data.roles[0],
-          levelOfExpertise: (databaseEscrowInfo as any)!.data.levelOfExpertise,
-          paymentRate: (databaseEscrowInfo as any)!.data.paymentRatePerHour,
-          profileOverview: (databaseEscrowInfo as any)!.data.profileOverview,
-          category: (databaseEscrowInfo as any)!.data.category,
-          country: (databaseEscrowInfo as any)!.data.country,
-          timeZone: (databaseEscrowInfo as any)!.data.timezone,
-          linkResume: (databaseEscrowInfo as any)!.data.resume,
-          linkPortfolio: (databaseEscrowInfo as any)!.data.portfolio,
-          twitterId: (databaseEscrowInfo as any)!.data.twitter,
+          username: (databaseEscrowInfo as any)?.data?.name || "",
+          roleDescription: (databaseEscrowInfo as any)?.data?.roles?.[0] || "",
+          levelOfExpertise: (databaseEscrowInfo as any)?.data?.levelOfExpertise || "",
+          paymentRate: (databaseEscrowInfo as any)?.data?.paymentRatePerHour || "",
+          profileOverview: (databaseEscrowInfo as any)?.data?.profileOverview || "",
+          category: (databaseEscrowInfo as any)?.data?.category || "",
+          country: (databaseEscrowInfo as any)?.data?.country || "",
+          timeZone: (databaseEscrowInfo as any)?.data?.timezone || "",
+          linkResume: (databaseEscrowInfo as any)?.data?.resume || "",
+          linkPortfolio: (databaseEscrowInfo as any)?.data?.portfolio || "",
+          twitterId: (databaseEscrowInfo as any)?.data?.twitter || "",
+          others: (databaseEscrowInfo as any)?.data?.others || "",
+          nigotion: (databaseEscrowInfo as any)?.data?.negotiation || false,
+          discord_id: (databaseEscrowInfo as any)?.data?.discordId || "",
+          telegram_id: (databaseEscrowInfo as any)?.data?.telegramId || "",
+          website: (databaseEscrowInfo as any)?.data?.website || "",
+          linkedin: (databaseEscrowInfo as any)?.data?.linkedin || ""
         });
         setInfo(user_info);
         setTimeout(resolve, 500);

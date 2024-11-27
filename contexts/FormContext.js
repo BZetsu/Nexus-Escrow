@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
-const { createContext } = require("react");
+import React, { createContext, useContext, useState } from 'react';
 
 export const FormContext = createContext({});
 

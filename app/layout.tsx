@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
+import "../styles/fonts.css";
 import TopNavbar from "@/components/Navbar/TopNavbar";
 import MuiTheme from "@/components/MuiTheme";
 import Form from "@/contexts/FormContext";
@@ -10,12 +10,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { toast, ToastContainer } from "react-toastify";
 import { web3 } from "@project-serum/anchor";
 
-const inter = Inter({ subsets: ["latin"] });
-
-// export const metadata: Metadata = {
-//   title: "Nexus Platform",
-//   description: "this the description for nexus platform",
-// };
 export  const links = (link: string) => {
   if (link.length > 0) {
     window.open(link, "_blank");
@@ -62,12 +56,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="font-inter">
         <AppWalletProvider>
           <MuiTheme>
             <TopNavbar />
             <Redirection>
-            <ToastContainer theme="dark" />
+              <ToastContainer theme="dark" />
               <Form>{children}</Form>
             </Redirection>
           </MuiTheme>
