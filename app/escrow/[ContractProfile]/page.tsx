@@ -37,6 +37,23 @@ interface UserProfileResponse {
   }
 }
 
+interface EscrowResponse {
+  data: {
+    description: string;
+    private: boolean;
+    // add other fields as needed
+  }
+}
+
+interface FounderResponse {
+  data: {
+    image: string;
+    name: string;
+    publicKey: string;
+    // add other fields as needed
+  }
+}
+
 export default function page() {
   const [open, setOpen] = useState(false);
   const [applyInfo, setApplyInfo] = useState<any>();
@@ -111,11 +128,17 @@ export default function page() {
         freelancer
       );
 
-      const databaseEscrowInfo = await backendApi.get(`/escrow/${address}`);
-      console.log(databaseEscrowInfo);
-      console.log("databaseEscrowInfo");
+      const databaseEscrowInfo = await backendApi.get<EscrowResponse>(`/escrow/${address}`);
+      const founderAddress = info?.founderInfo?.walletAddress || info?.founder?.toBase58();
+      
+      if (founderAddress) {
+        const founderInfo = await backendApi.get<FounderResponse>(`/nexus-user/${founderAddress}`);
+        if (founderInfo?.data?.image) {
+          setFounderProfilePic(founderInfo.data.image);
+        }
+      }
 
-      setEscrowDateInfo((databaseEscrowInfo as any)!.data);
+      setEscrowDateInfo(databaseEscrowInfo.data);
       info!.founderInfo = founder_info;
       info!.freelancer = freelancer_info;
       console.log("infoOOOOOOOOOOOO " + info);
@@ -266,11 +289,15 @@ export default function page() {
           <Card className="!p-0 sm:col-span-2 overflow-hidden ">
             <div className="flex sm:flex-col p-2">
               <Image
-                src={founderProfilePic || dragon}
+                src={founderProfilePic || escrowInfo?.founderInfo?.image || dragon}
                 alt="profile"
                 width={500}
                 height={500}
                 className="w-[100px] p-1 sm:p-0 sm:w-full rounded-xl object-cover object-center"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = dragon.src;
+                }}
               />
 
               <Stack pt={2} spacing={3} px={1}>

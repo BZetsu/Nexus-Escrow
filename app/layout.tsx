@@ -9,6 +9,7 @@ import Redirection from "@/components/Redirection";
 import "react-toastify/dist/ReactToastify.css";
 import { toast, ToastContainer } from "react-toastify";
 import { web3 } from "@project-serum/anchor";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export  const links = (link: string) => {
   if (link.length > 0) {
@@ -66,6 +67,7 @@ export default function RootLayout({
             </Redirection>
           </MuiTheme>
         </AppWalletProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

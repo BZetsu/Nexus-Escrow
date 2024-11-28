@@ -66,3 +66,21 @@ export class ApiService {
 export const backendApi = new ApiService(
   'https://new-nexus-platform-backend.onrender.com/api/v1'
 );
+
+interface UserInfoResponse {
+  data: {
+    image: string;
+    name: string;
+    // add other fields as needed
+  };
+}
+
+export const getUserInfo = async (walletAddress: string): Promise<UserInfoResponse | null> => {
+  try {
+    const response = await backendApi.get<UserInfoResponse>(`/nexus-user/${walletAddress}`);
+    return response;
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    return null;
+  }
+};

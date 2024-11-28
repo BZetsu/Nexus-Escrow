@@ -11,14 +11,14 @@ import { backendApi } from '@/lib/utils/api.util';
 const idl = require('../../../data/nexus.json');
 
 interface ReceiverInfo {
-  name: any
-  image: any
-  twitter: any
-  telegramId: any
-  profileOverview: any
-  levelOfExpertise: any
-  category: any
-  publicKey: web3.PublicKey
+  name: string;
+  image: string;
+  twitter: string;
+  telegramId: string;
+  profileOverview: string;
+  levelOfExpertise: string;
+  category: string;
+  publicKey: web3.PublicKey;
 }
 
 export async function disputeSuccess(
@@ -26,7 +26,7 @@ export async function disputeSuccess(
   connection: web3.Connection,
   wallet: any,
   escrow: web3.PublicKey,
-  reciever: web3.PublicKey
+  receiver: ReceiverInfo
 ) {
   const provider = new AnchorProvider(connection, anchorWallet, {
     preflightCommitment: 'processed',
@@ -40,25 +40,24 @@ export async function disputeSuccess(
     PROGRAM_ID
   );
 
-  const receiverInfo = await get_userr_info(anchorWallet, connection, reciever);
-
-  console.log(escrow.toBase58());
+  const userInfo = await get_userr_info(anchorWallet, connection, receiver.publicKey);
 
   const [userMintTokenAccount] = web3.PublicKey.findProgramAddressSync(
     [
-      receiverInfo!.publicKey.toBuffer(),
+      receiver.publicKey.toBuffer(),
       TOKEN_PROGRAM_ID.toBuffer(),
       MINT.toBuffer(),
     ],
     SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
   );
+
   const [NexusEscrowTokenAccount] = web3.PublicKey.findProgramAddressSync(
     [nexusEscrow.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), MINT.toBuffer()],
     SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
   );
 
   const [apply] = web3.PublicKey.findProgramAddressSync(
-    [reciever.toBuffer(), escrow.toBuffer()],
+    [receiver.publicKey.toBuffer(), escrow.toBuffer()],
     PROGRAM_ID
   );
 
@@ -66,8 +65,8 @@ export async function disputeSuccess(
     .disputeSuccess()
     .accounts({
       escrow: escrow,
-      reciever: reciever,
-      recieverAddress: reciever,
+      reciever: receiver.publicKey,
+      recieverAddress: receiver.publicKey,
       authority: anchorWallet.publicKey,
       from: NexusEscrowTokenAccount,
       to: userMintTokenAccount,
@@ -77,32 +76,19 @@ export async function disputeSuccess(
       systemProgram: web3.SystemProgram.programId,
     })
     .transaction();
-  // .rpc({
-  //     commitment: "confirmed",
-  // })
 
   const blockhash = (await connection.getLatestBlockhash()).blockhash;
   tx.recentBlockhash = blockhash;
   tx.feePayer = anchorWallet.publicKey;
 
-  const signTx = await wallet.signTransaction(
-    tx
-    //     , connection, {
-    //     preflightCommitment: "confirmed"
-    // }
-  );
-
+  const signTx = await wallet.signTransaction(tx);
   const hash = await connection.sendRawTransaction(signTx.serialize());
-  console.log(hash);
 
-  const dummyDbId = 'xxx';
   const dummyStatusUpdate = 'DisputeSuccess';
   const apiResponse = await backendApi.patch(
     `/freelancer/update/${apply.toBase58()}`,
     { status: dummyStatusUpdate }
   );
-  //   if(!apiResponse) {console.log('Do something')}
-  console.log(apiResponse);
 
   return tx;
 }
