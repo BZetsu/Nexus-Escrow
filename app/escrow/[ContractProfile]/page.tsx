@@ -61,6 +61,7 @@ export default function page() {
   const [escrowInfo, setEscrowInfo] = useState<any>();
   const [escrowDateInfo, setEscrowDateInfo] = useState<any>();
   const [founderProfilePic, setFounderProfilePic] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
 
   function handleCloseModal() {
     setOpen(false);
@@ -100,6 +101,7 @@ export default function page() {
 
   const getEscrowInfos = async () => {
     try {
+      setIsLoading(true);
       // const address = searchParams.get("escrow");
       console.log(pathname);
       const address = pathname.replace("/escrow/", "");
@@ -153,6 +155,8 @@ export default function page() {
       }
     } catch (e) {
       console.log(e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -216,6 +220,34 @@ export default function page() {
     }
   };
 
+  const checkAccess = async () => {
+    try {
+      if (!anchorWallet) {
+        return;
+      }
+
+      const address = pathname.replace("/escrow/", "");
+      const escrow = new web3.PublicKey(address);
+      
+      // Get escrow info first
+      const info = await getEscrowInfo(anchorWallet, connection, escrow);
+      
+      if (!info || !info.founder) {
+        return;
+      }
+
+      // Keep the check but remove redirect
+      const isCreator = info.founder.toBase58() === anchorWallet.publicKey.toBase58();
+
+    } catch (e) {
+      console.error('Access check failed:', e);
+    }
+  };
+
+  useEffect(() => {
+    checkAccess();
+  }, [anchorWallet, pathname]);
+
   useEffect(() => {
     if (!anchorWallet) return;
     getEscrowInfos();
@@ -234,6 +266,10 @@ export default function page() {
     }
   };
   const [showDescription, setShowDescription] = useState(false);
+
+  if (isLoading) {
+    return <div>Loading...</div>; // Or your loading component
+  }
 
   return (
     <div>
