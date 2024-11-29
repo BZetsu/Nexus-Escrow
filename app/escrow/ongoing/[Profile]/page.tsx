@@ -191,8 +191,8 @@ export default function page() {
         const databaseEscrowInfo = await backendApi.get<EscrowData>(`/escrow?escrowAddress=${address}`);
         console.log("Escrow Database Info:", databaseEscrowInfo?.data);
         
-        if (databaseEscrowInfo?.data) {
-          setEscrowInfoData(databaseEscrowInfo.data);
+        if (databaseEscrowInfo?.data?.length > 0) {
+          setEscrowInfoData(databaseEscrowInfo.data[0]);
         }
       } catch (err) {
         console.log("Error fetching escrow data:", err);
@@ -402,8 +402,8 @@ export default function page() {
             <Card width="lg" className="h-fit">
               <div className="text-sm text-textColor mb-3">Description</div>
               <div className="text-[13px] leading-7 text-gray-700">
-                {escrow_info?.description ? (
-                  <div>{escrow_info.description}</div>
+                {escrow_info_data?.description ? (
+                  <div>{escrow_info_data.description}</div>
                 ) : (
                   <div className="text-gray-500">No description available</div>
                 )}
