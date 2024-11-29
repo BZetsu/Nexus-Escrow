@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React from "react";
+import { Button } from "@mui/material";
 
 // interface CardContractType {
 //   contractName: string;
@@ -23,6 +24,8 @@ export default function CardContract({
   type,
   createdAt,
   status,
+  isPending,
+  onCancelApply,
 }: any) {
   const router = useRouter();
   const path = usePathname();
@@ -99,19 +102,21 @@ export default function CardContract({
     }
   };
 
+  const handleClick = () => {
+    if (type === 3) {
+      router.push(`/escrow/ongoing/${escrow}`);
+    } else if (type === 2) {
+      router.push(`/escrow/${escrow}`);
+    } else {
+      router.push(`/escrow/myescrow/${escrow}`);
+    }
+  };
+
   return (
     <motion.button
       whileHover={{ x: 5 }}
       whileTap={{ scale: 0.99 }}
-      onClick={() => {
-        if (type === 1) {
-          router.push(`/escrow/myescrow/${escrow}`);
-        } else if (type === 2) {
-          router.push(`/escrow/${escrow}`);
-        } else {
-          router.push(`/escrow/ongoing/${escrow}`);
-        }
-      }}
+      onClick={handleClick}
     >
       <div className={`p-5 border border-gray-300 rounded-md shadow-md w-full font-myanmar relative ${
         path.slice(1, 16) === "escrow/myescrow" && "p-8"
@@ -151,6 +156,24 @@ export default function CardContract({
               </div>
             </div>
           </div>
+
+          {isPending && (
+            <div className="mt-4 text-center">
+              <div className="text-sm text-gray-600 mb-3">
+                Your Application has been sent
+              </div>
+              <Button
+                variant="contained"
+                className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-second !mx-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCancelApply && onCancelApply(escrow.toString());
+                }}
+              >
+                Cancel Application
+              </Button>
+            </div>
+          )}
 
           {/* Bottom section with timestamps */}
           <div className="flex justify-between items-end mt-4 text-[10px] text-textColor">

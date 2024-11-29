@@ -61,8 +61,13 @@ export default function page() {
 
   const getUserData = async (userId: string) => {
     try {
-      const response = await backendApi.get(`/users/${userId}`);
-      setUserData(response);
+      const response = await backendApi.get<{data: any[]}>(`/nexus-user`);
+      if (response && response.data) {
+        const userData = response.data.find((user: any) => user.userId === userId);
+        if (userData) {
+          setUserData(userData);
+        }
+      }
     } catch (e) {
       console.log(e);
     }
@@ -148,28 +153,60 @@ export default function page() {
 
   const getEscrowInfos = async () => {
     try {
-      // const address = searchParams.get("escrow");
-      console.log(pathname);
       const address = pathname.replace("/escrow/ongoing/", "");
       const escrow = new web3.PublicKey(address);
       const info = await getEscrowInfo(anchorWallet, connection, escrow);
-
+      
+      // Get escrow data from database
+      const databaseEscrowInfo = await backendApi.get(`/escrow/${address}`);
+      if ((databaseEscrowInfo as any)?.data) {
+        setEscrowInfoData((databaseEscrowInfo as any).data);
+      }
+      
+      // Get founder info from blockchain
       const founder_info = await get_userr_info(
         anchorWallet,
         connection,
         info!.founder
       );
-      const databaseEscrowInfo = await backendApi.get(`/escrow/${address}`);
-      console.log(databaseEscrowInfo);
-      if ((databaseEscrowInfo as any)!.data!) {
-        setEscrowInfoData((databaseEscrowInfo as any).data);
-      }
-      info!.private = (databaseEscrowInfo as any).private
-      info!.founderInfo = founder_info;
 
+      // Get all users and find founder
+      const allUsers = await backendApi.get<{data: any[]}>(`/nexus-user`);
+      const founderAddress = info!.founder.toBase58();
+      console.log("Founder Address to find:", founderAddress);
+
+      if (allUsers?.data) {
+        console.log("All Users:", allUsers.data.map(u => ({
+          userId: u.userId,
+          address: u.address,
+          name: u.name
+        })));
+
+        const founderData = allUsers.data.find(
+          (user: any) => user.userId === founderAddress || user.address === founderAddress
+        );
+        
+        console.log("Found Founder Data:", founderData);
+        
+        if (founderData && founder_info) {
+          info!.founderInfo = {
+            ...founder_info,
+            image: founderData.image || dragon.src,
+            telegramId: founderData.telegramId || founderData.discordId || '',
+            name: founderData.name || founder_info?.name || "Unknown",
+            twitter: founderData.twitter || ''
+          };
+
+          console.log("Final Mapped Data:", info!.founderInfo);
+        } else if (founder_info) {
+          info!.founderInfo = founder_info;
+        }
+      }
+
+      console.log("Founder Info:", info!.founderInfo);
       setEscrowInfo(info);
     } catch (e) {
-      console.log(e);
+      console.log("Error in getEscrowInfos:", e);
     }
   };
 
@@ -270,58 +307,67 @@ export default function page() {
           >
             <div className="p-2">
               <Image
-                src={userData?.profileImage || dragon}
+                src={escrow_info?.founderInfo?.image || dragon}
                 alt={escrow_info?.founderInfo?.name || "Profile"}
+                width={500}
+                height={500}
                 className="w-full h-[180px] [@media(min-width:500px)]:h-[200px] sm:h-[250px] rounded-xl object-cover object-center"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = dragon.src;
+                }}
               />
             </div>
 
-            <Stack py={2} spacing={2} px={3}>
+            <Stack pt={2} spacing={2} px={1} className="flex-1 flex flex-col">
               <Stack
                 flexDirection="row"
                 justifyContent="space-between"
                 alignItems="center"
-                className="flex-wrap gap-2"
+                className="w-full py-1"
               >
-                <div className="text-base [@media(min-width:500px)]:text-lg sm:text-xl font-[600] line-clamp-1 font-myanmar_khyay break-all flex-1">
-                  {escrow_info ? escrow_info.founderInfo.name : "--"}
+                <div className="border border-gray-200 rounded-xl px-6 py-3 flex flex-col w-full min-h-[4rem]">
+                  <span className="text-xs text-gray-500 mb-1">Contract Creator</span>
+                  <div className="flex items-center justify-between">
+                    <div className="text-2xl sm:text-3xl font-[600] font-myanmarButton">
+                      {escrow_info?.founderInfo?.name || "--"}
+                    </div>
+                    <span
+                      onClick={() => links(escrow_info?.founderInfo?.twitter)}
+                      className="flex items-center cursor-pointer hover:text-blue-500 transition-colors duration-200"
+                    >
+                      <XIcon className="text-3xl" />
+                      <div className="text-[10px] text-gray-500 ml-1">
+                        (Verified)
+                      </div>
+                    </span>
+                  </div>
                 </div>
-                {escrow_info && escrow_info.founderInfo.twitter.length > 0 ? (
-                  <span
-                    onClick={() =>
-                      links(escrow_info.founderInfo.twitter.length)
-                    }
-                    className="cursor-pointer"
-                  >
-                    <XIcon className="text-lg sm:text-xl" />
-                  </span>
-                ) : (
-                  <span>
-                    <XIcon className="text-lg sm:text-xl" />
-                  </span>
-                )}
               </Stack>
 
-              <Stack flexDirection="row" justifyContent="center" className="w-full mt-3 [@media(min-width:500px)]:mt-4 sm:mt-8">
-                {escrow_info &&
-                  escrow_info.telegramLink.length > 0 ? (
-                  <Button
-                    onClick={() => links(escrow_info.telegramLink)}
-                    variant="contained"
-                    className="!text-sm !px-4 [@media(min-width:500px)]:!px-6 sm:!px-10 !py-2 !capitalize !font-semibold !bg-second !w-full sm:!w-56"
-                  >
-                    Start Chat
-                  </Button>
-                ) : (
-                  <Button
-                    variant="contained"
-                    disabled={true}
-                    className="!text-sm !px-4 [@media(min-width:500px)]:!px-6 sm:!px-10 !py-2 !capitalize !font-semibold !bg-first !w-full sm:!w-56"
-                  >
-                    Start Chat
-                  </Button>
-                )}
-              </Stack>
+              <div className="flex justify-center mt-4">
+                <Button
+                  onClick={() => {
+                    if (escrow_info?.founderInfo?.telegramId) {
+                      let link = escrow_info.founderInfo.telegramId;
+                      // Remove any existing URL
+                      link = link.replace('https://www.youtube.com/', '')
+                                .replace('https://youtube.com/', '')
+                                .replace('https://t.me/', '')
+                                .replace('@', '');
+                      
+                      // Format as telegram link
+                      link = `https://t.me/${link}`;
+                      links(link);
+                    }
+                  }}
+                  variant="contained"
+                  className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-second !text-white"
+                  disabled={!escrow_info?.founderInfo?.telegramId}
+                >
+                  Start Chat
+                </Button>
+              </div>
             </Stack>
           </Card>
 
@@ -369,18 +415,17 @@ export default function page() {
 
               {escrow_info && applyInfo && escrow_info.status === 3 &&
                 <div className="flex gap-2 mt-4">
-                  <Card className="!w-fit !py-2 text-center !px-2 grid place-content-center">
-                    <CiFileOn className="text-6xl mx-auto" />
-                    {escrow_info && (
-                      <div
-                        className="text-xs mt-1"
-                        onClick={() => links(escrow_info.materials)}
-                        style={{ cursor: "pointer" }}
-                      >
+                  <div 
+                    onClick={() => links(escrow_info?.materials)}
+                    className="w-fit cursor-pointer"
+                  >
+                    <Card className="!py-2 !px-2 grid place-content-center hover:scale-105 transition-transform duration-200">
+                      <CiFileOn className="text-6xl mx-auto" />
+                      <div className="text-xs mt-1">
                         Link to Resources
                       </div>
-                    )}
-                  </Card>
+                    </Card>
+                  </div>
                   <div className="w-full">
                     <Card className="text-xs text-center !shadow-none !border !border-textColor">
                     Your submission was approved and pay has been made to your wallet
@@ -389,44 +434,45 @@ export default function page() {
                     </Card>
                   </div>
                 </div>}
-              {escrow_info && applyInfo && escrow_info.status === 1 &&
+              {escrow_info && applyInfo && escrow_info.status === 1 && (
                 <div className="flex gap-2 mt-4">
                   <Card className="!w-fit !py-2 text-center !px-2 grid place-content-center">
                     <CiFileOn className="text-6xl mx-auto" />
                     {escrow_info && (
                       <div
-                        className="text-xs mt-1"
-                        onClick={() => links(escrow_info.materials)}
-                        style={{ cursor: "pointer" }}
+                        className="text-xs mt-1 hover:scale-105 transition-transform duration-200 cursor-pointer"
+                        onClick={() => links(escrow_info?.materials)}
                       >
                         Link to Resources
                       </div>
                     )}
                   </Card>
-                  <div className="w-full">
-                    <Card className="text-xs text-center !shadow-none !border !border-textColor">
+                  <div className="w-full flex flex-col">
+                    <Card className="!shadow-none !border !border-gray-300 !bg-transparent flex items-center justify-center h-[108px] mb-6">
+                      <div className="text-sm text-gray-600 text-center">
                         Your Application has been sent
-                      {/* Your submission was approved and pay has been made to your
-                  wallet, project will auto terminate in 24 hours */}
+                      </div>
                     </Card>
-                        <Button
-                          variant="contained"
-                          className="!text-sm !px-100 !py-3 !capitalize !font-semibold !bg-second !w-56"
-                          onClick={() => cancel_apply()}
-                        >
-                          Cancel Application
-                        </Button>
+                    <div className="flex justify-center gap-4">
+                      <Button
+                        variant="contained"
+                        className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-second"
+                        onClick={() => cancel_apply()}
+                      >
+                        Cancel Application
+                      </Button>
+                    </div>
                   </div>
-                </div>}
+                </div>
+              )}
               {escrow_info && applyInfo && escrow_info.status === 2 &&
                 <div className="flex gap-2 mt-4">
                   <Card className="!w-fit !py-2 text-center !px-2 grid place-content-center">
                     <CiFileOn className="text-6xl mx-auto" />
                     {escrow_info && (
                       <div
-                        className="text-xs mt-1"
-                        onClick={() => links(escrow_info.materials)}
-                        style={{ cursor: "pointer" }}
+                        className="text-xs mt-1 hover:scale-105 transition-transform duration-200 cursor-pointer"
+                        onClick={() => links(escrow_info?.materials)}
                       >
                         Link to Resources
                       </div>
@@ -534,9 +580,9 @@ export default function page() {
               className="grid place-items-center"
             >
               <ApproveModal
-                client={applyInfo.userName}
-                contractor={escrow_info.founderInfo.name}
-                amount={Number(escrow_info.amount) / 1000_000}
+                client={applyInfo?.userName || "User"}
+                contractor={escrow_info?.founderInfo?.name || "Contractor"}
+                amount={Number(escrow_info?.amount || 0) / 1000_000}
                 title="Confirmation"
                 messageTitle="Are you sure you want to request dispute??"
                 messageDescription="To prevent abuse, we charge a dispute resolution fees. Please try as much as possible ro resolve your issue before opening a dispute"
