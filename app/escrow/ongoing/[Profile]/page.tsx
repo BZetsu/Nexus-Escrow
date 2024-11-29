@@ -187,12 +187,17 @@ export default function page() {
       // Get escrow data - handle 404 gracefully
       let telegramContact = '';
       try {
-        // Try with the raw address first
-        const databaseEscrowInfo = await backendApi.get<EscrowData>(`/escrow?escrowAddress=${address}`);
-        console.log("Escrow Database Info:", databaseEscrowInfo?.data);
+        const databaseEscrowInfo = await backendApi.get<EscrowData>(`/escrow/${address}`);
+        console.log("Raw Database Response:", databaseEscrowInfo);
         
-        if (databaseEscrowInfo?.data?.length > 0) {
-          setEscrowInfoData(databaseEscrowInfo.data[0]);
+        if (databaseEscrowInfo?.data) {
+          // If data is an array, get first item
+          const escrowData = Array.isArray(databaseEscrowInfo.data) 
+            ? databaseEscrowInfo.data[0] 
+            : databaseEscrowInfo.data;
+            
+          console.log("Escrow Data to use:", escrowData);
+          setEscrowInfoData(escrowData);
         }
       } catch (err) {
         console.log("Error fetching escrow data:", err);
@@ -402,8 +407,8 @@ export default function page() {
             <Card width="lg" className="h-fit">
               <div className="text-sm text-textColor mb-3">Description</div>
               <div className="text-[13px] leading-7 text-gray-700">
-                {escrow_info_data?.description ? (
-                  <div>{escrow_info_data.description}</div>
+                {escrow_info?.description || escrow_info_data?.description ? (
+                  <div>{escrow_info_data?.description || escrow_info?.description}</div>
                 ) : (
                   <div className="text-gray-500">No description available</div>
                 )}
@@ -462,7 +467,7 @@ export default function page() {
                     </Card>
                   </div>
                 </div>}
-              {escrow_info && applyInfo && escrow_info.status === 0 && (
+              {escrow_info && applyInfo && (
                 <div className="flex gap-2 mt-4 px-4 pb-4">
                   <Card className="!w-fit !py-2 text-center !px-2 grid place-content-center">
                     <CiFileOn className="text-6xl mx-auto" />

@@ -370,7 +370,16 @@ export default function page() {
   return (
     <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-5">
       <div className="col-span-1 md:col-span-2">
-        <Card className="!p-0 !h-[9rem] sm:!h-[20rem] md:!h-[25rem] lg:!h-[32rem]">
+        <Card className="!p-0 
+          !h-[7rem]                         /* Base height */
+          [@media(max-width:620px)]:!h-[6rem]  /* Start scaling down */
+          [@media(max-width:520px)]:!h-[5.5rem] /* Mid-range */
+          [@media(max-width:420px)]:!h-[5rem]   /* Smaller */
+          [@media(max-width:320px)]:!h-[4.5rem] /* Smallest */
+          sm:!h-[20rem]                     /* Tablet up */
+          md:!h-[25rem]                     /* Desktop */
+          lg:!h-[32rem]                     /* Large screens */
+        ">
           <div className=" !flex sm:!flex-col">
             {" "}
             <div className="relative w-[50%] sm:w-full">
@@ -402,16 +411,15 @@ export default function page() {
                   width={500}
                   height={350}
                   className="w-full h-auto object-cover rounded-xl 
-                    max-w-[250px] h-[100px]                /* Base mobile - even smaller */
-                    sm:max-w-[350px] sm:h-[180px]         /* Small screens - reduced */
-                    md:max-w-[300px] md:h-[160px]         /* Medium - smaller */
-                    lg:max-w-[450px] lg:h-[300px]         /* Large - reduced */
-                    
-                    /* Special breakpoint handling */
-                    @media (width: 670px) {
-                      max-width: 180px                     
-                      height: 130px                        
-                    }"
+                    max-w-[250px] h-[100px]                /* Base size */
+                    [@media(max-width:620px)]:h-[70px]     /* Start scaling down */
+                    [@media(max-width:520px)]:h-[60px]     /* Mid-range */
+                    [@media(max-width:420px)]:h-[50px]     /* Smaller */
+                    [@media(max-width:320px)]:h-[40px]     /* Smallest */
+                    sm:max-w-[350px] sm:h-[180px]         /* Tablet up */
+                    md:max-w-[300px] md:h-[160px]         /* Desktop */
+                    lg:max-w-[450px] lg:h-[300px]         /* Large screens */
+                  "
                   priority
                   unoptimized
                 />
