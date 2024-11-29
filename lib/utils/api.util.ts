@@ -84,3 +84,24 @@ export const getUserInfo = async (walletAddress: string): Promise<UserInfoRespon
     return null;
   }
 };
+
+const cache = new Map();
+
+export const getCachedData = async (key: string, fetcher: () => Promise<any>) => {
+  if (cache.has(key)) {
+    return cache.get(key);
+  }
+  
+  const data = await fetcher();
+  cache.set(key, data);
+  return data;
+};
+
+export interface EscrowResponse {
+  data: Array<{
+    escrowAddress: string;
+    private: boolean;
+    createdAt: string; // ISO date string from backend
+    contactName: string;
+  }>;
+}

@@ -18,6 +18,8 @@ import Image from "next/image";
 import React, { Suspense, useEffect, useState } from "react";
 import { notify_delete, notify_error, notify_laoding, notify_success } from "../layout";
 import { backendApi } from "@/lib/utils/api.util";
+import { useRouter } from "next/navigation";
+import { EscrowResponse } from "@/lib/utils/api.util";
 
 export default function Page() {
   const [timeValue, setTimeValue] = useState("");
@@ -35,6 +37,7 @@ export default function Page() {
   const anchorWallet = useAnchorWallet();
   const wallet = useWallet();
   const { connection } = useConnection();
+  const router = useRouter();
 
   const isDisabled = () => {
     return (
@@ -50,24 +53,79 @@ export default function Page() {
   const fetchEscrows = async () => {
     try {
       const escrow = await getAllEscrow(connection, "confirmed");
-      console.log(escrow);
-      console.log("databaseEscrowInfo");
-      const databaseEscrowInfo = await backendApi.get(`/escrow`);
-      console.log(databaseEscrowInfo);
-      (databaseEscrowInfo as any).data!.map((data: any) => {
-        escrow.map((es: any, id: any) => {
-          if (es.pubkey.toBase58() == data.escrowAddress) {
-            console.log(data.escrowAddress)
-            console.log(es.pubkey.toBase58())
-            console.log(data.contactName)
-            console.log(data.private)
-            escrow[id].private = data.private;
+      
+      console.log("Raw escrow data before processing:", escrow.map(es => ({
+        name: es.contractName,
+        receiver: es.reciever?.toBase58() || 'No receiver',
+        status: es.status,
+        hasReceiver: !!es.reciever,
+        rawStatus: es.status
+      })));
+      
+      const databaseEscrowInfo = await backendApi.get<EscrowResponse>(`/escrow`);
+      
+      if (!databaseEscrowInfo || !databaseEscrowInfo.data) {
+        console.error('No escrow data received from backend');
+        return;
+      }
+      
+      // Create a timestamp map for faster lookup
+      const timestampMap = new Map();
+      
+      databaseEscrowInfo.data.forEach(data => {
+        try {
+          // Convert ISO date string to timestamp
+          const timestamp = new Date(data.createdAt).getTime();
+          if (!isNaN(timestamp)) {
+            timestampMap.set(data.escrowAddress, timestamp);
           }
-        })
-      })
-      setEscrows(escrow);
+        } catch (err) {
+          console.error('Error processing timestamp for escrow:', data.escrowAddress, err);
+        }
+      });
+      
+      // Add timestamps to all escrows
+      const escrowsWithTimestamps = escrow.map(es => {
+        const pubkey = es.pubkey.toBase58();
+        const timestamp = timestampMap.get(pubkey);
+        
+        // Determine real status based on contract state
+        let status = 0; // Default to Not Started
+        
+        // Only set status = 1 (Contract Started) after approveFreelancer is called
+        if (!es.reciever || es.reciever.toBase58() === '11111111111111111111111111111111') {
+          status = 0; // Not Started - no receiver
+        } else if (es.status === 0 && es.reciever) {
+          status = 1; // Contract Started - has receiver
+        } else {
+          status = es.status; // Use contract status for all other states
+        }
+
+        return {
+          ...es,
+          createdAt: timestamp || 0,
+          status: status
+        };
+      });
+      
+      // Sort by timestamp (newest first)
+      const sortedEscrows = [...escrowsWithTimestamps].sort((a, b) => {
+        // Put entries with no timestamp at the end
+        if (!a.createdAt && !b.createdAt) return 0;
+        if (!a.createdAt) return 1;
+        if (!b.createdAt) return -1;
+        return b.createdAt - a.createdAt;
+      });
+      
+      console.log('First 5 sorted escrows:', sortedEscrows.slice(0, 5).map(e => ({
+        name: e.contractName,
+        created: new Date(e.createdAt).toLocaleString(),
+        timestamp: e.createdAt
+      })));
+      
+      setEscrows(sortedEscrows);
     } catch (error) {
-      console.error(error);
+      console.error('Error in fetchEscrows:', error);
     }
   };
 
@@ -112,12 +170,20 @@ export default function Page() {
       );
       notify_delete();
       notify_success("Escrow Contract Created Successfully!!")
+      router.push('/escrow/myescrow');
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");      
       console.log(e);
     }
   };
+
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredEscrows = escrows.filter(escrow => 
+    escrow.contractName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div>
@@ -278,29 +344,59 @@ export default function Page() {
         </form>
 
         <Card>
-          <div className="text-sm sm:text-base text-textColor font-myanmar">
-            Open Public Contracts
+          <div className="flex justify-between items-center">
+            <div className="text-sm sm:text-base text-textColor font-myanmar">
+              Open Public Contracts
+            </div>
+            <div className="flex items-center gap-2">
+              {searchOpen ? (
+                <div className="flex items-center">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-48 px-3 py-1 border rounded-l-md focus:outline-none"
+                    placeholder="Search contracts..."
+                    autoFocus
+                  />
+                  <button 
+                    onClick={() => setSearchOpen(false)}
+                    className="px-2 py-1 border border-l-0 rounded-r-md hover:bg-gray-100"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setSearchOpen(true)}
+                  className="p-1 hover:bg-gray-100 rounded-md"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
 
-          <Stack
-            mt={3}
-            spacing={2.6}
-            className="h-[472px] overflow-y-scroll overflow-x-hidden escrow pr-2"
-          >
-            {escrows &&
-              escrows.map((el, i) => (
-                (!el.private && el.status !== 6) &&
-                (el.reciever !== null ? el.reciever.toBase58() == anchorWallet?.publicKey.toBase58() : true) &&
-                <Suspense fallback={<Loading />} key={i}>
-                  <CardContract
-                    contractName={el.contractName}
-                    amount={Number(el.amount)}
-                    deadline={Number(el.deadline)}
-                    escrow={el.pubkey.toBase58()}
-                    type={2}
-                  />
-                </Suspense>
-              ))}
+          <Stack mt={3} spacing={2.6} className="h-[472px] overflow-y-scroll overflow-x-hidden escrow pr-2">
+            {filteredEscrows.map((el, i) => (
+              (!el.private && el.status !== 6) &&
+              (el.reciever !== null ? el.reciever.toBase58() == anchorWallet?.publicKey.toBase58() : true) &&
+              <Suspense fallback={<Loading />} key={i}>
+                <CardContract
+                  contractName={el.contractName}
+                  amount={Number(el.amount)}
+                  deadline={Number(el.deadline)}
+                  escrow={el.pubkey.toBase58()}
+                  createdAt={el.createdAt}
+                  status={el.status || 0}
+                  type={2}
+                />
+              </Suspense>
+            ))}
           </Stack>
         </Card>
       </div>

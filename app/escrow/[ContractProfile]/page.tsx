@@ -102,12 +102,13 @@ export default function page() {
   const getEscrowInfos = async () => {
     try {
       setIsLoading(true);
-      // const address = searchParams.get("escrow");
-      console.log(pathname);
       const address = pathname.replace("/escrow/", "");
       const escrow = new web3.PublicKey(address);
       const info = await getEscrowInfo(anchorWallet, connection, escrow);
-      console
+      
+      console.log("Escrow Info:", info);
+      console.log("Telegram Link:", info?.telegramLink);
+
       const founder_info = await get_userr_info(
         anchorWallet,
         connection,
@@ -131,6 +132,8 @@ export default function page() {
       );
 
       const databaseEscrowInfo = await backendApi.get<EscrowResponse>(`/escrow/${address}`);
+      console.log("Database Escrow Info:", databaseEscrowInfo);
+
       const founderAddress = info?.founderInfo?.walletAddress || info?.founder?.toBase58();
       
       if (founderAddress) {
@@ -257,11 +260,12 @@ export default function page() {
   const router = useRouter();
 
   const links = (link: string) => {
-    console.log(link);
-    if (link.length > 0) {
-      // const http = "https://www.";
-      // link = http.concat(link);
-      // link = link.replace("https://www.", "https://www.");
+    console.log("Opening link:", link);
+    if (link && link.length > 0) {
+      // Add https:// if not present
+      if (!link.startsWith('http://') && !link.startsWith('https://')) {
+        link = 'https://' + link;
+      }
       window.open(link, "_blank");
     }
   };
@@ -322,59 +326,89 @@ export default function page() {
         </div>
 
         <div className="grid sm:grid-cols-5 gap-4 mt-5">
-          <Card className="!p-0 sm:col-span-2 overflow-hidden ">
-            <div className="flex sm:flex-col p-2">
+          <Card className="!p-0 sm:col-span-2 overflow-hidden h-[550px]">
+            <div className="flex sm:flex-col p-2 h-full">
               <Image
                 src={founderProfilePic || escrowInfo?.founderInfo?.image || dragon}
                 alt="profile"
                 width={500}
                 height={500}
-                className="w-[100px] p-1 sm:p-0 sm:w-full rounded-xl object-cover object-center"
+                className="w-[100px] h-[100px] p-1 sm:p-0 sm:w-full sm:h-[350px] rounded-xl object-cover object-center"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = dragon.src;
                 }}
               />
 
-              <Stack pt={2} spacing={3} px={1}>
+              <Stack pt={2} spacing={2} px={1} className="flex-1 flex flex-col">
                 <Stack
                   flexDirection="row"
                   justifyContent="space-between"
-                  alignItems="start"
+                  alignItems="center"
+                  className="w-full py-1"
                 >
-                  <div className="text-base sm:text-xl font-[600] font-myanmarButton">
-                    {escrowInfo ? escrowInfo.founderInfo.name : "--"}
+                  <div className="border border-gray-200 rounded-xl px-6 py-3 flex items-center justify-between w-full min-h-[4rem]">
+                    <div className="text-xl sm:text-3xl font-[600] font-myanmarButton flex items-center mt-2">
+                      {escrowInfo ? escrowInfo.founderInfo.name : "--"}
+                    </div>
+                    <div className="hidden sm:flex items-center gap-3">
+                      <span
+                        onClick={() => links(escrowInfo.founderInfo.twitter)}
+                        className="flex items-center cursor-pointer hover:text-blue-400 transition-colors duration-200"
+                      >
+                        <XIcon className="text-2xl" />
+                      </span>
+                      <div className="text-[10px] text-gray-500 flex items-center">
+                        (Not Verified)
+                      </div>
+                    </div>
                   </div>
-                  <span
-                    onClick={() => links(escrowInfo.founderInfo.twitter)}
-                    className="hidden sm:block"
-                  >
-                    <XIcon className="text-lg" />
-                  </span>
                 </Stack>
 
-                <div className="flex gap-4 items-end sm:min-h-[81px] !mt-11">
-                  <Button
-                    onClick={() => escrowInfo && links(escrowInfo.telegramLink)}
-                    variant="contained"
-                    className="!text-[10px] sm:!text-sm !px-10 !font-semibold !pt-3 !capitalize !bg-second !w-fit !mx-auto !pb-[.8rem]"
-                  >
-                    Start Chat
-                  </Button>
+                <div className="flex flex-col gap-4 justify-end h-[100px]">
+                  <div className="flex gap-4 items-center justify-center pb-4 mb-6">
+                    <Button
+                      onClick={() => {
+                        if (escrowInfo && escrowDateInfo) {
+                          console.log("Database Escrow Info:", escrowDateInfo);
+                          const telegramLink = escrowDateInfo.telegramLink;
+                          if (telegramLink) {
+                            let link = telegramLink;
+                            // Check if it's a username only
+                            if (!link.includes('.') && !link.startsWith('@') && !link.includes('t.me')) {
+                              link = `https://t.me/${link}`;
+                            }
+                            // Add https if needed
+                            else if (!link.startsWith('http://') && !link.startsWith('https://')) {
+                              link = `https://${link}`;
+                            }
+                            console.log("Opening telegram link:", link);
+                            window.open(link, '_blank');
+                          } else {
+                            console.log("No telegram link found in database info:", escrowDateInfo);
+                          }
+                        }
+                      }}
+                      variant="contained"
+                      className="!text-[10px] sm:!text-sm !px-12 !font-semibold !pt-3 !capitalize !bg-second !w-fit !pb-[.8rem] !py-3"
+                    >
+                      Start Chat
+                    </Button>
 
-                  <span
-                    onClick={() => links(escrowInfo.founderInfo.twitter)}
-                    className="sm:hidden"
-                  >
-                    <XIcon className="text-sm" />
-                  </span>
+                    <span
+                      onClick={() => links(escrowInfo.founderInfo.twitter)}
+                      className="sm:hidden"
+                    >
+                      <XIcon className="text-sm" />
+                    </span>
+                  </div>
                 </div>
               </Stack>
             </div>
           </Card>
 
-          <div className="sm:col-span-3">
-            <Card width="lg" className=" h-72">
+          <div className="sm:col-span-3 flex flex-col gap-4">
+            <Card width="lg" className="h-72">
               <div className="text-xs text-textColor">Description</div>
 
               <div className=" mt-3">
@@ -389,7 +423,7 @@ export default function page() {
               </div>
             </Card>
 
-            <Card className="mt-4">
+            <Card className="flex-1">
               <Button
                 className="!mt-4 w-full !bg-white hover:bg-opacity-0 shadow-none !normal-case border border-gray-300"
                 style={{ display: "unset" }}
@@ -404,26 +438,27 @@ export default function page() {
                 </span>
               </Button>
 
-              {!applyInfo ? <Stack alignItems="center" mt={4}>
-                <Button
-                  variant="contained"
-                  onClick={handleOpenModal}
-                  className="!text-xs sm:!text-sm !font-semibold !bg-main !text-second !w-fit !normal-case !py-3 !px-8"
-                >
-                  Apply to work
-                </Button>
-              </Stack>
-            :
-            <Stack alignItems="center" mt={4}>
-            <Button
-              variant="contained"
-              onClick={() => cancel_apply()}
-              className="!text-xs sm:!text-sm !font-semibold !bg-main !text-second !w-fit !normal-case !py-3 !px-8"
-            >
-              Cancel Apply
-            </Button>
-          </Stack>
-            }
+              {!applyInfo ? (
+                <div className="flex justify-center h-[120px] items-end pb-4">
+                  <Button
+                    variant="contained"
+                    onClick={handleOpenModal}
+                    className="!text-xs sm:!text-sm !font-semibold !bg-main !text-second !w-fit !normal-case !py-3 !px-8"
+                  >
+                    Apply to work
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex justify-center h-[120px] items-end pb-4">
+                  <Button
+                    variant="contained"
+                    onClick={() => cancel_apply()}
+                    className="!text-xs sm:!text-sm !font-semibold !bg-main !text-second !w-fit !normal-case !py-3 !px-8"
+                  >
+                    Cancel Apply
+                  </Button>
+                </div>
+              )}
             </Card>
           </div>
         </div>
@@ -438,7 +473,7 @@ export default function page() {
           <div className="p-5">
             <div className="text-sm">
               <span className="text-red-600">Hint: </span>
-              People who fill up their profile properly are likely to get hire
+              People who fill up their profile properly are likely to get hired
               <br />
               Go to{" "}
               <span

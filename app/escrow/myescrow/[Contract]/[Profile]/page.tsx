@@ -1,4 +1,3 @@
-
 "use client";
 
 import Card from "@/components/Card";
@@ -45,6 +44,19 @@ interface DatabaseResponse {
     image: string;
   }
 }
+
+const getLevelColor = (level: string) => {
+  switch(level?.toLowerCase()) {
+    case 'intermediate':
+      return 'bg-blue-500';
+    case 'expert':
+      return 'bg-green-500';
+    case 'entry level':
+      return 'bg-yellow-500';
+    default:
+      return 'bg-gray-500';
+  }
+};
 
 export default function page() {
   const menu = ["Profile Summary", "Nexus Jobs"];
@@ -250,16 +262,21 @@ export default function page() {
               <div className="text-textColor">
               {userInfo && output(userInfo.roles[0], "Role")}
               </div>
-              <div className="px-4 py-2 bg-[#1DA1F2] text-black font-[500] rounded">
-              {userInfo && output(userInfo.levelOfExpertise, "Level Of Expertise")}
+              <div className={`px-2 py-1 text-white rounded-md text-[11px] ${getLevelColor(userInfo?.levelOfExpertise)}`}>
+                {userInfo && output(userInfo.levelOfExpertise, "Level")}
               </div>
             </Stack>
-              {userInfo && <span
-              onClick={() => links(userInfo.twitter)}
-              >
-            <XIcon className="text-2xl" />
-
-              </span>}
+            <div className="flex items-center gap-2">
+              {userInfo && (
+                <span
+                  onClick={() => links(userInfo.twitter)}
+                  className="hover:text-blue-500 transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <XIcon className="text-2xl" />
+                  <span className="text-xs text-gray-500">Verified</span>
+                </span>
+              )}
+            </div>
           </Stack>
         </Card>
 
@@ -326,38 +343,50 @@ export default function page() {
           >
             <Card className="rounded-t-none pb-2">
               <Stack
-                className="text-lg sm:text-2xl font-[500]"
+                className="text-base font-[500]"
                 flexDirection="row"
-                gap={6}
+                gap={4}
                 justifyContent="center"
                 alignContent="center"
-                py={3}
+                py={2}
               >
-            <div>{ongoing ? ongoing.length : "--"} Ongoing Jobs</div>
-            <div>{completed ? completed.length : "--"} Jobs Completed</div>
+                <div className="font-mynamarButton">
+                  {ongoing ? ongoing.length : "--"} Ongoing Jobs
+                </div>
+                <div className="font-mynamarButton">
+                  {completed ? completed.length : "--"} Jobs Completed
+                </div>
               </Stack>
-
-              <div className="px-1 mt-4 text-xs text-textColor font-[500]">
-                0 Leaderboard Ratings
-              </div>
             </Card>
 
             <Card className="mt-5 h-[15rem]">
               <div className="text-xs text-textColor">Profile Overview</div>
               <div className="text-sm leading-6 line-clamp-5 mt-2">
-              {userInfo && userInfo.profileOverview}
+                {userInfo && userInfo.profileOverview}
               </div>
             </Card>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 px-1">
-            <div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.category, "Category")}</div>
+              <div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.category, "Category")}</div>
               {<div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.country, "Country")}</div>}
               {<div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.timezone, "Time Zone")}</div>}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 px-1">
-            <div className={`${cardStyle} !py-4`}>{userInfo && stringLengthHandle(output(userInfo.portfolio, "Portfolio")!)}</div>
-            <div className={`${cardStyle} !py-4`}>{userInfo && stringLengthHandle(output(userInfo.resume, "Resume")!)}</div>
+              <Button
+                onClick={() => userInfo?.portfolio && window.open(userInfo.portfolio, '_blank')}
+                variant="outlined"
+                className="!normal-case !py-4 !text-black hover:!bg-gray-50 !border-2 !border-gray-300 !rounded-xl !bg-white !font-semibold !shadow-sm"
+              >
+                Portfolio
+              </Button>
+              <Button
+                onClick={() => userInfo?.resume && window.open(userInfo.resume, '_blank')}
+                variant="outlined"
+                className="!normal-case !py-4 !text-black hover:!bg-gray-50 !border-2 !border-gray-300 !rounded-xl !bg-white !font-semibold !shadow-sm"
+              >
+                Resume
+              </Button>
             </div>
           </motion.div>
         )}

@@ -20,6 +20,12 @@ export default function CardApp({
   startProject,
   setSelect
 }: any) {
+  console.log("CardApp Full Data:", {
+    data,
+    title,
+    role
+  });
+
   const links = (_link: string) => {
     window.open(_link, "_blank");
   };
@@ -31,9 +37,9 @@ export default function CardApp({
       alignItems="center"
       justifyContent="space-between"
     >
-      <Stack flexDirection="row" alignItems="center" gap={1}>
+      <Stack flexDirection="row" alignItems="start" gap={1}>
         <Image
-          src={`https://new-nexus-platform-backend.onrender.com/api/v1/bucket/upload/${data.user}`}
+          src={data?.userInfo?.image || DragonImg.src}
           alt={title || "Applicant"}
           width={80}
           height={56}
@@ -44,19 +50,12 @@ export default function CardApp({
             e.currentTarget.src = DragonImg.src;
           }}
         />
-        <Stack spacing={0.4}>
-          <div
-            className="text-base cursor-pointer font-[400] line-clamp-1"
-            onClick={() => {
-              if (data?.user) {
-                router.push("/escrow/myescrow/apply/" + data.user.toBase58())
-              }
-            }}
-          >
+        <Stack spacing={0.4} alignItems="start" className="min-w-[120px]">
+          <div className="text-base cursor-pointer font-[600] line-clamp-1 text-left">
             {title}
           </div>
-          <div className="text-xs text-textColor font-[300] line-clamp-1">
-            {role}
+          <div className="text-xs text-gray-700 font-[400] line-clamp-1">
+            {data?.role || role || "Developer"}
           </div>
         </Stack>
       </Stack>

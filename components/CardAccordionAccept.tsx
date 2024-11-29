@@ -172,6 +172,7 @@ export default function CardAccordionAccept({
               apply={el.pubkey}
               chat={el.description}
               escrowInfo={escrowInfo}
+              data={el}
             />
           ))}
         </Stack>

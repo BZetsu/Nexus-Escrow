@@ -20,7 +20,13 @@ export default function ContractProfile({ client }: ContractProfileProps) {
       if (client?.walletAddress) {
         const userInfo = await getUserInfo(client.walletAddress);
         if (userInfo?.data) {
-          setProfileImage(userInfo.data.image);
+          if (userInfo.data.image && 
+              userInfo.data.image !== 'https://www.youtube.com/' &&
+              userInfo.data.image.startsWith('http')) {
+            setProfileImage(userInfo.data.image);
+          } else {
+            setProfileImage(Profile.src);
+          }
           setUserName(userInfo.data.name);
         }
       }

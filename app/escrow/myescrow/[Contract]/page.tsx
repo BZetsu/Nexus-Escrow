@@ -19,7 +19,7 @@ import {
 } from "@solana/wallet-adapter-react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, Suspense } from "react";
 import linksvg from "@/public/linksvg.svg";
 import ApproveModal from "@/components/ApproveModal";
 import { FaEdit } from "react-icons/fa";
@@ -31,6 +31,26 @@ import { updateEscrow } from "@/lib/NexusProgram/escrow/update_escrow";
 import { rejectFreelancerSubmit } from "@/lib/NexusProgram/escrow/rejectFreelancerSubmit";
 import { approvePayment } from "@/lib/NexusProgram/escrow/ApprovePayment";
 import { cancelEscrow } from "@/lib/NexusProgram/escrow/cancel_escrow";
+import { useEscrowCache } from "@/lib/hooks/useEscrowCache";
+
+// Add loading component
+const LoadingState = () => (
+  <div className="animate-pulse">
+    <div className="h-32 bg-gray-200 rounded-md mb-4"></div>
+    <div className="h-24 bg-gray-200 rounded-md"></div>
+  </div>
+);
+
+// Add this component at the top level of the file
+const RedirectToEscrow = ({ contractAddress }: { contractAddress: string }) => {
+  const router = useRouter();
+  
+  useEffect(() => {
+    router.push(`/escrow/${contractAddress}`);
+  }, [contractAddress, router]);
+
+  return <LoadingState />;
+};
 
 export default function page() {
   const [open, setOpen] = useState(false);
@@ -61,6 +81,114 @@ export default function page() {
   const { connection } = useConnection();
   const wallet = useWallet();
   const pathname = usePathname();
+  const router = useRouter();
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+
+  const checkAccess = async () => {
+    if (!anchorWallet) {
+      console.log("No wallet connected");
+      return false;
+    }
+
+    try {
+      const address = pathname.replace("/escrow/myescrow/", "");
+      
+      if (!address) {
+        console.error('Invalid escrow address');
+        return false;
+      }
+
+      const escrow = new web3.PublicKey(address);
+      const info = await getEscrowInfo(anchorWallet, connection, escrow);
+      
+      if (!info || !info.founder) {
+        console.error('Invalid escrow info');
+        router.push(`/escrow/${address}`);
+        return false;
+      }
+
+      // Get user info from backend
+      try {
+        interface UserData {
+          userId: string;
+          address: string;
+          name: string;
+          roles: string[];
+          image: string;
+          timeZone: string | null;
+          country: string | null;
+          twitter: string;
+        }
+
+        interface UserResponse {
+          data: UserData[];
+          success: boolean;
+          message: string;
+        }
+
+        const response = await backendApi.get<UserResponse>(`/nexus-user`);
+        const users = response.data;
+
+        console.log("Backend Response:", users);
+        
+        if (!users || users.length === 0) {
+          console.error('No user data received');
+          return false;
+        }
+
+        // Find the user with matching wallet address
+        const currentUser = users.find(
+          (user: UserData) => user.address === anchorWallet.publicKey.toBase58()
+        );
+
+        console.log("Current User:", currentUser);
+        console.log("Founder Address:", info.founder.toBase58());
+        
+        if (currentUser) {
+          const isFounder = info.founder.toBase58() === currentUser.userId;
+          console.log("Access Check:", {
+            founder: info.founder.toBase58(),
+            userId: currentUser.userId,
+            walletAddress: currentUser.address,
+            isFounder
+          });
+          return isFounder;
+        } else {
+          console.error('Current user not found in database');
+          return false;
+        }
+      } catch (e) {
+        console.error('Error fetching user data:', e);
+        return false;
+      }
+
+    } catch (e) {
+      console.error('Access check failed:', e);
+      const address = pathname.replace("/escrow/myescrow/", "");
+      router.push(`/escrow/${address}`);
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    const verifyAccess = async () => {
+      setIsLoading(true);
+      const accessResult = await checkAccess();
+      setHasAccess(accessResult);
+      
+      if (accessResult) {
+        await Promise.all([
+          getEscrowInfosss(),
+          getApplys()
+        ]);
+      }
+      setIsLoading(false);
+    };
+    
+    verifyAccess();
+  }, [anchorWallet, pathname, connection]);
 
   function handleOpenModal() {
     setOpen(true);
@@ -112,6 +240,9 @@ export default function page() {
       const address = pathname.replace("/escrow/myescrow/", "");
       const escrow = new web3.PublicKey(address);
       const info = await getEscrowInfo(anchorWallet, connection, escrow);
+      
+      console.log("Escrow Info:", info);
+      
       info!.escrow = escrow;
       console.log("info");
       console.log(info, "info too");
@@ -120,7 +251,6 @@ export default function page() {
       console.log(databaseEscrowInfo);
       console.log("databaseEscrowInfo");
       setEscrowDateInfo((databaseEscrowInfo as any)!.data);
-        // if(!databaseEscrowInfo) {console.log('Do something')}
 
       const freelancerInfo = await get_userr_info(
         anchorWallet,
@@ -131,7 +261,7 @@ export default function page() {
       info!.freelancerInfo = freelancerInfo;
       setEscrowInfo(info);
     } catch (e) {
-      console.log(e);
+      console.log("Error in getEscrowInfosss:", e);
     }
   };
 
@@ -463,432 +593,455 @@ export default function page() {
     }
   };
 
+  const address = pathname.replace("/escrow/myescrow/", "");
+  const { data: cachedEscrowInfo, loading: escrowLoading } = useEscrowCache(
+    address,
+    anchorWallet,
+    connection
+  );
+
+  useEffect(() => {
+    if (cachedEscrowInfo) {
+      setEscrowInfo(cachedEscrowInfo);
+    }
+  }, [cachedEscrowInfo]);
+
+  if (!anchorWallet || isLoading) {
+    return <LoadingState />;
+  }
+
+  if (hasAccess === false) {
+    const contractAddress = pathname.replace("/escrow/myescrow/", "");
+    return <RedirectToEscrow contractAddress={contractAddress} />;
+  }
 
   return (
-    <div>
-      <div className="max-w-6xl mx-auto pt-4">
-        <div className="flex items-center gap-3">
-          <Card width="lg">
-            <Stack
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="space-between"
+    <Suspense fallback={<LoadingState />}>
+      <div>
+        <div className="max-w-6xl mx-auto pt-4">
+          <div className="flex items-center gap-3">
+            <Card width="lg">
+              <Stack
+                flexDirection="row"
+                alignItems="center"
+                justifyContent="space-between"
+              >
+                <Stack flexDirection="row" alignItems="start" gap={1}>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      ref={inputRef}
+                      className="text-base line-clamp-1 sm:text-2xl !font-bold font-myanmarButton h-6 border-0 focus:outline-none"
+                      placeholder="Eg. Enter a new title"
+                      value={titleInput}
+                      onChange={(e) => setTitleInput(e.target.value)}
+                    />
+                  ) : (
+                    <div className="text-base line-clamp-1 sm:text-2xl !font-[700] font-myanmarButton">
+                      {titleInput}
+                    </div>
+                  )}
+
+                  <button onClick={handleTitleEdit}>
+                    <FaEdit
+                      className="text-xl text-textColor pt-[2px]"
+                      style={{ display: "unset" }}
+                    />
+                  </button>
+                </Stack>
+                <Stack flexDirection="row" alignItems="start" gap={1}>
+                  <Image src={Coin} alt="coin" className="w-5 pt-[2px]" />
+                  <div className="text-sm sm:text-xl font-semibold leading-none ">
+                    {escrowInfo ? Number(escrowInfo.amount) / 1000_000 : "--"}
+                  </div>
+                </Stack>
+              </Stack>
+            </Card>
+
+            <div
+              className="bg-white rounded-xl p-5 h-full hidden sm:block cursor-pointer"
+              onClick={copyToClipboard}
             >
-              <Stack flexDirection="row" alignItems="start" gap={1}>
-                {isEditing ? (
+              <Image src={linksvg} alt="" className="w-[30px] py-[3px]" />
+            </div>
+            {copied && (
+              <div className="absolute top-28 left-1/2 transform -translate-x-1/2 mt-2 px-4 py-2 bg-gray-300 text-white rounded">
+                Copied!
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+            <Card className="col-span-1 md:col-span-3" width="lg">
+              <div className="flex justify-between items-center w-full">
+                <div className="text-xs sm:text-sm text-textColor">
+                  Description
+                </div>
+                <button onClick={handleDescriptionEdit}>
+                  <FaEdit className="text-lg text-textColor" />
+                </button>
+              </div>
+              <div className="text-xs sm:text-sm mt-3 leading-7 min-h-24 py-2">
+                {isDescriptionEditing ? (
                   <input
                     type="text"
-                    ref={inputRef}
-                    className="text-base line-clamp-1 sm:text-2xl !font-bold font-myanmarButton h-6 border-0 focus:outline-none"
-                    placeholder="Eg. Enter a new title"
-                    value={titleInput}
-                    onChange={(e) => setTitleInput(e.target.value)}
+                    ref={descriptionInput}
+                    className="text-base line-clamp-1 sm:text-sm font-semibold font-myanmarButton h-6 border-0 focus:outline-none"
+                    placeholder="Enter a new description"
+                    value={descriptionInput}
+                    onChange={(e) => setDescriptionInput(e.target.value)}
                   />
                 ) : (
-                  <div className="text-base line-clamp-1 sm:text-2xl !font-[700] font-myanmarButton">
-                    {titleInput}
-                  </div>
+                  <div>{descriptionInput}</div>
                 )}
-
-                <button onClick={handleTitleEdit}>
-                  <FaEdit
-                    className="text-xl text-textColor pt-[2px]"
-                    style={{ display: "unset" }}
-                  />
-                </button>
-              </Stack>
-              <Stack flexDirection="row" alignItems="start" gap={1}>
-                <Image src={Coin} alt="coin" className="w-5 pt-[2px]" />
-                <div className="text-sm sm:text-xl font-semibold leading-none ">
-                  {escrowInfo ? Number(escrowInfo.amount) / 1000_000 : "--"}
-                </div>
-              </Stack>
-            </Stack>
-          </Card>
-
-          <div
-            className="bg-white rounded-xl p-5 h-full hidden sm:block cursor-pointer"
-            onClick={copyToClipboard}
-          >
-            <Image src={linksvg} alt="" className="w-[30px] py-[3px]" />
-          </div>
-          {copied && (
-            <div className="absolute top-28 left-1/2 transform -translate-x-1/2 mt-2 px-4 py-2 bg-gray-300 text-white rounded">
-              Copied!
-            </div>
-          )}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-          <Card className="col-span-1 md:col-span-3" width="lg">
-            <div className="flex justify-between items-center w-full">
-              <div className="text-xs sm:text-sm text-textColor">
-                Description
               </div>
-              <button onClick={handleDescriptionEdit}>
-                <FaEdit className="text-lg text-textColor" />
-              </button>
-            </div>
-            <div className="text-xs sm:text-sm mt-3 leading-7 min-h-24 py-2">
-              {isDescriptionEditing ? (
-                <input
-                  type="text"
-                  ref={descriptionInput}
-                  className="text-base line-clamp-1 sm:text-sm font-semibold font-myanmarButton h-6 border-0 focus:outline-none"
-                  placeholder="Enter a new description"
-                  value={descriptionInput}
-                  onChange={(e) => setDescriptionInput(e.target.value)}
-                />
-              ) : (
-                <div>{descriptionInput}</div>
-              )}
-            </div>
-          </Card>
+            </Card>
 
-          <Card className="col-span-1">
-            {escrowInfo &&  escrowDateInfo && <Stack
-              flexDirection="row"
-              gap={1}
-              className="text-sm"
-              alignItems="center"
-            >
-              <div>Public</div>
-              <Switch
-              // onClick={() => privates()}
-              checked={escrowDateInfo.private}
-              onChange={(e) =>{
-                console.log(e.target.checked);
-                privates(e.target.checked)
-                // setEscrowDateInfo((prevForm:  any) => ({
-                //   ...prevForm,
-                //   private: !e.target.checked,
-                // }))
-              }}
-               className="-mt-[6px]" />
-              <div>Private</div>
-            </Stack>}
+            <Card className="col-span-1">
+              {escrowInfo &&  escrowDateInfo && <Stack
+                flexDirection="row"
+                gap={1}
+                className="text-sm"
+                alignItems="center"
+              >
+                <div>Public</div>
+                <Switch
+                // onClick={() => privates()}
+                checked={escrowDateInfo.private}
+                onChange={(e) =>{
+                  console.log(e.target.checked);
+                  privates(e.target.checked)
+                  // setEscrowDateInfo((prevForm:  any) => ({
+                  //   ...prevForm,
+                  //   private: !e.target.checked,
+                  // }))
+                }}
+                 className="-mt-[6px]" />
+                <div>Private</div>
+              </Stack>}
 
-            <Stack mt={4} spacing={2}>
-              <div className="text-xs text-textColor">Deadline</div>
-              <Stack flexDirection="row" gap={1} alignItems="center">
-                <div
-                  onClick={() => filter()}
-                  className="text-lg font-[500] line-clamp-1"
-                >
-                  {deadline}
-                </div>
-                <IconButton onClick={handleOpenModal}>
-                  <EditOutlinedIcon className="text-textColor -mt-2  text-base" />
-                </IconButton>
+              <Stack mt={4} spacing={2}>
+                <div className="text-xs text-textColor">Deadline</div>
+                <Stack flexDirection="row" gap={1} alignItems="center">
+                  <div
+                    onClick={() => filter()}
+                    className="text-lg font-[500] line-clamp-1"
+                  >
+                    {deadline}
+                  </div>
+                  <IconButton onClick={handleOpenModal}>
+                    <EditOutlinedIcon className="text-textColor -mt-2  text-base" />
+                  </IconButton>
+                </Stack>
               </Stack>
-            </Stack>
-          </Card>
-        </div>
+            </Card>
+          </div>
 
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
-          <Stack spacing={2}>
-            {escrowInfo && escrowDateInfo && applys && (
-              <CardAccordionAccept
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+            <Stack spacing={2}>
+              {escrowInfo && escrowDateInfo && applys && (
+                <CardAccordionAccept
+                  data={
+                    escrowInfo.reciever
+                      ? applys?.filter(
+                          (ap: any) =>
+                            ap.user.toBase58() == escrowInfo.reciever.toBase58()
+                        )
+                      : []
+                  }
+                  title="Approved Contractor"
+                  type="Chat"
+                  font_size="!text-sm"
+                  escrowInfo={escrowInfo}
+                  showTerminate={showTerminate}
+                  showApprove={handleShowApproveSubmit}
+                  showReject={handleShowRejectSubmit}
+                  openDispute={openDispute}
+                  cancel={handleCancelProjectTermination}
+                  escrowDateInfo={escrowDateInfo}
+                >
+                  {escrowInfo && escrowInfo.status !== 5 && escrowInfo.status !== 3 && escrowInfo.status !== 6 && escrowInfo.status !== 1 && <Stack flexDirection="row" gap={1}>
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        setShowTerminate(true);
+                        setShowReject(false);
+                        setOpenDispute(false);
+                      }}
+                      className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-2"
+                    >
+                      Terminate
+                    </Button>
+                  </Stack>}
+                  {escrowInfo && escrowInfo.status == 1 && <Stack flexDirection="row" gap={1}>
+                    <Button
+                      variant="contained"
+                      onClick={() => {
+                        terminating()
+                      }}
+                      className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-2"
+                    >
+                      Terminate
+                    </Button>
+                  </Stack>}
+                </CardAccordionAccept>
+              )}
+
+              {/* {showStartProject && (
+                <CardAnimation>
+                  <Stack
+                    flexDirection="row"
+                    justifyContent="center"
+                    gap={2}
+                    mt={1}
+                  >
+                    <Button
+                      variant="contained"
+                      className="!text-xs !px-5 !font-semibold !py-2 !bg-main !text-second !normal-case"
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="contained"
+                      className="!text-xs !px-5 !font-semibold !py-2 !bg-main !text-second !normal-case"
+                      onClick={() => {
+                        setShowStartProject(false);
+                        setShowTerminate(true);
+                      }}
+                    >
+                      Reject
+                    </Button>
+                  </Stack>
+                </CardAnimation>
+              )}
+              {showTerminate && (
+                <CardAnimation>
+                  <Stack
+                    flexDirection="row"
+                    justifyContent="center"
+                    gap={2}
+                    mt={1}
+                  >
+                    <Button
+                      variant="contained"
+                      onClick={() => setOpen(true)}
+                      className="!text-xs !px-5 !font-semibold !py-2 !bg-main !text-second !normal-case"
+                    >
+                      Request new submissin
+                    </Button>
+                    <Button
+                      variant="contained"
+                      className="!text-xs !px-5 !font-semibold !py-2 !bg-main !text-second !normal-case"
+                      onClick={() => {
+                        setShowTerminate(false);
+                        setShowRefund(true);
+                      }}
+                    >
+                      Dispute and Request refund
+                    </Button>
+                  </Stack>
+                </CardAnimation>
+              )}
+
+              {showRefund && (
+                <CardAnimation>
+                  <div className="text-xs text-black font-[200]">
+                    Your dispute has been resolved, and refund completed, please
+                    terminate the project
+                  </div>
+                </CardAnimation>
+              )} */}
+            </Stack>
+            {applys && escrowInfo && (
+              <CardAccordion
+                title="Applications"
                 data={
                   escrowInfo.reciever
                     ? applys?.filter(
                         (ap: any) =>
-                          ap.user.toBase58() == escrowInfo.reciever.toBase58()
+                          ap.user.toBase58() !== escrowInfo.reciever.toBase58()
                       )
-                    : []
+                    : applys.filter((apply) => apply.status !== "Rejected")
                 }
-                title="Approved Contractor"
+                startProject={handleShowStartProject}
+                setSelect={setSelect}
+                approve={approve}
                 type="Chat"
+                page={"approve"}
+                link={"approve"}
                 font_size="!text-sm"
-                escrowInfo={escrowInfo}
-                showTerminate={showTerminate}
-                showApprove={handleShowApproveSubmit}
-                showReject={handleShowRejectSubmit}
-                openDispute={openDispute}
-                cancel={handleCancelProjectTermination}
-                escrowDateInfo={escrowDateInfo}
-              >
-                {escrowInfo && escrowInfo.status !== 5 && escrowInfo.status !== 3 && escrowInfo.status !== 6 && escrowInfo.status !== 1 && <Stack flexDirection="row" gap={1}>
-                  <Button
-                    variant="contained"
-                    onClick={() => {
-                      setShowTerminate(true);
-                      setShowReject(false);
-                      setOpenDispute(false);
-                    }}
-                    className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-2"
-                  >
-                    Terminate
-                  </Button>
-                </Stack>}
-                {escrowInfo && escrowInfo.status == 1 && <Stack flexDirection="row" gap={1}>
-                  <Button
-                    variant="contained"
-                    onClick={() => {
-                      terminating()
-                    }}
-                    className="!text-xs !bg-white !font-semibold !normal-case !text-second !px-4 !py-2"
-                  >
-                    Terminate
-                  </Button>
-                </Stack>}
-              </CardAccordionAccept>
+                padding="!pt-[0.2rem]"
+              />
             )}
+          </div>
+        </div>
 
-            {/* {showStartProject && (
-              <CardAnimation>
-                <Stack
-                  flexDirection="row"
-                  justifyContent="center"
-                  gap={2}
-                  mt={1}
-                >
-                  <Button
-                    variant="contained"
-                    className="!text-xs !px-5 !font-semibold !py-2 !bg-main !text-second !normal-case"
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    variant="contained"
-                    className="!text-xs !px-5 !font-semibold !py-2 !bg-main !text-second !normal-case"
-                    onClick={() => {
-                      setShowStartProject(false);
-                      setShowTerminate(true);
-                    }}
-                  >
-                    Reject
-                  </Button>
-                </Stack>
-              </CardAnimation>
-            )}
-            {showTerminate && (
-              <CardAnimation>
-                <Stack
-                  flexDirection="row"
-                  justifyContent="center"
-                  gap={2}
-                  mt={1}
-                >
-                  <Button
-                    variant="contained"
-                    onClick={() => setOpen(true)}
-                    className="!text-xs !px-5 !font-semibold !py-2 !bg-main !text-second !normal-case"
-                  >
-                    Request new submissin
-                  </Button>
-                  <Button
-                    variant="contained"
-                    className="!text-xs !px-5 !font-semibold !py-2 !bg-main !text-second !normal-case"
-                    onClick={() => {
-                      setShowTerminate(false);
-                      setShowRefund(true);
-                    }}
-                  >
-                    Dispute and Request refund
-                  </Button>
-                </Stack>
-              </CardAnimation>
-            )}
-
-            {showRefund && (
-              <CardAnimation>
-                <div className="text-xs text-black font-[200]">
-                  Your dispute has been resolved, and refund completed, please
-                  terminate the project
-                </div>
-              </CardAnimation>
-            )} */}
-          </Stack>
-          {applys && escrowInfo && (
-            <CardAccordion
-              title="Applications"
-              data={
-                escrowInfo.reciever
-                  ? applys?.filter(
-                      (ap: any) =>
-                        ap.user.toBase58() !== escrowInfo.reciever.toBase58()
-                    )
-                  : applys.filter((apply) => apply.status !== "Rejected")
-              }
-              startProject={handleShowStartProject}
-              setSelect={setSelect}
-              approve={approve}
-              type="Chat"
-              page={"approve"}
-              link={"approve"}
-              font_size="!text-sm"
-              padding="!pt-[0.2rem]"
+        <Modal
+          open={open}
+          onClose={handleCloseModal}
+          className="grid place-items-center"
+        >
+          <Card className="text-center text-lg p-10">
+            <div>Active Deadline</div>
+            <div className="mt-6 text-3xl font-[500]">
+              {escrowInfo ? deadline : "2d 24hrs 30min"}
+            </div>
+            <input
+              className={`${inputStyle} mx-auto mt-8 w-[80%]`}
+              type="datetime-local"
+              value={newdeadline}
+              onChange={(e) => {
+                setNewDeadline(e.target.value);
+              }}
             />
-          )}
-        </div>
+
+            <Stack alignItems="center" mt={5}>
+              <Button
+                variant="contained"
+                className="!text-second !text-xs sm:!text-sm !bg-main !normal-case !px-10 !py-2"
+                onClick={() => update_escrow()}
+              >
+                Done
+              </Button>
+            </Stack>
+          </Card>
+        </Modal>
+
+        {applys && applys.length > 0 && escrowInfo && escrowInfo.reciever && <Modal
+          open={showApproveSubmit}
+          onClose={() => setShowApproveSubmit(false)}
+          className="grid place-items-center"
+        >
+          <ApproveModal
+            contractor={applys?.filter(
+                  (ap: any) =>
+                    ap.user.toBase58() === escrowInfo.reciever.toBase58()
+                )[0].userName
+              }
+            amount={Number(escrowInfo.amount) / 1000_000}
+            title="Confirmation"
+            messageTitle="Are you sure you want to approve submission??"
+            messageDescription="Money will be released to the contractor and Contract will be Terminated!"
+          >
+            <Button
+              onClick={() => approveSubmit()}
+              variant="contained"
+              className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-2"
+            >
+              Approve
+            </Button>
+          </ApproveModal>
+        </Modal>}
+
+      {/* this is for the Reject popUP */}
+        {applys && applys.length > 0 && escrowInfo && escrowInfo.reciever && <Modal
+          open={showRejectSubmit}
+          onClose={() => setShowRejectSubmit(false)}
+          className="grid place-items-center"
+        >
+          <ApproveModal
+            contractor={applys?.filter(
+                  (ap: any) =>
+                    ap.user.toBase58() === escrowInfo.reciever.toBase58()
+                )[0].userName
+              }
+            amount={Number(escrowInfo.amount) / 1000_000}
+            title="Confirmation"
+            messageTitle="Are you sure you want to reject submission??"
+            messageDescription=""
+          >
+            <Button
+              onClick={() => RejectSubmit()}
+              variant="contained"
+              className="!normal-case !text-white !text-sm !bg-red-700 !px-8 !py-2"
+            >
+              Reject
+            </Button>
+          </ApproveModal>
+        </Modal>}
+        
+        {applys && select && escrowInfo && <Modal
+          open={showStartProject}
+          onClose={() => setShowStartProject(false)}
+          className="grid place-items-center"
+        >
+          <ApproveModal
+            contractor={(applys.filter((escrow: any) => escrow.pubkey.toBase58() == select.toBase58()))[0].userName}
+            amount={Number(escrowInfo.amount) / 1000_000}
+            title="Confirmation"
+            messageTitle="Are you sure to start the contract??"
+            messageDescription="Contract can oly be terminated by both parties mutually agreeing to do so"
+          >
+            <Button
+              onClick={() => approve()}
+              variant="contained"
+              className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-2"
+            >
+              Start Contract
+            </Button>
+          </ApproveModal>
+        </Modal>}
+
+        <Modal
+          open={showApprove}
+          onClose={() => setShowApprove(false)}
+          className="grid place-items-center"
+        >
+          <ApproveModal
+            title="Dispute Request"
+            messageTitle="Are you sure you want tot request a dispute??"
+            messageDescription={
+              <>
+                To prevent abuse, we charge a dispute resolution fee.
+                <br />
+                Please try as much as pussible to resolve your issues before
+                opening a dispute.
+              </>
+            }
+          >
+            <Button
+              variant="contained"
+              onClick={() => OpenDispute()}
+              // onClick={handleOpenDispute}
+              className="!normal-case !text-white !text-xs !bg-black !px-16 !py-2"
+            >
+              Open dispute
+            </Button>
+          </ApproveModal>
+        </Modal>
+
+        <Modal
+          open={isDescriptionModalOpen}
+          onClose={handleDescriptionModalClose}
+          aria-labelledby="description-modal"
+          aria-describedby="edit-description"
+        >
+          <div className="bg-white p-5 rounded-md w-[90%] md:w-[60rem]  mx-auto mt-32 max-h-[70vh] overflow-y-auto">
+            <h2 id="description-modal-title" className="text-xl font-semibold">
+              Edit Description
+            </h2>
+            <textarea
+              className="w-full h-[50rem] mt-3 p-2 border rounded-md focus:outline-none"
+              value={descriptionInput}
+              onChange={(e) => setDescriptionInput(e.target.value)}
+            />
+            {descriptionError && (
+              <p className="text-red-500 mt-2">{descriptionError}</p>
+            )}
+            <div className="flex justify-end gap-3 mt-4">
+              <Button
+                variant="contained"
+                onClick={() => updateDescription()}
+                disabled={descriptionInput === originalDescription}
+              >
+                Save
+              </Button>
+              <Button variant="outlined" onClick={handleDescriptionModalClose}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </Modal>
       </div>
-
-      <Modal
-        open={open}
-        onClose={handleCloseModal}
-        className="grid place-items-center"
-      >
-        <Card className="text-center text-lg p-10">
-          <div>Active Deadline</div>
-          <div className="mt-6 text-3xl font-[500]">
-            {escrowInfo ? deadline : "2d 24hrs 30min"}
-          </div>
-          <input
-            className={`${inputStyle} mx-auto mt-8 w-[80%]`}
-            type="datetime-local"
-            value={newdeadline}
-            onChange={(e) => {
-              setNewDeadline(e.target.value);
-            }}
-          />
-
-          <Stack alignItems="center" mt={5}>
-            <Button
-              variant="contained"
-              className="!text-second !text-xs sm:!text-sm !bg-main !normal-case !px-10 !py-2"
-              onClick={() => update_escrow()}
-            >
-              Done
-            </Button>
-          </Stack>
-        </Card>
-      </Modal>
-
-      {applys && applys.length > 0 && escrowInfo && escrowInfo.reciever && <Modal
-        open={showApproveSubmit}
-        onClose={() => setShowApproveSubmit(false)}
-        className="grid place-items-center"
-      >
-        <ApproveModal
-          contractor={applys?.filter(
-                (ap: any) =>
-                  ap.user.toBase58() === escrowInfo.reciever.toBase58()
-              )[0].userName
-            }
-          amount={Number(escrowInfo.amount) / 1000_000}
-          title="Confirmation"
-          messageTitle="Are you sure you want to approve submission??"
-          messageDescription="Money will be released to the contractor and Contract will be Terminated!"
-        >
-          <Button
-            onClick={() => approveSubmit()}
-            variant="contained"
-            className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-2"
-          >
-            Approve
-          </Button>
-        </ApproveModal>
-      </Modal>}
-
-    {/* this is for the Reject popUP */}
-      {applys && applys.length > 0 && escrowInfo && escrowInfo.reciever && <Modal
-        open={showRejectSubmit}
-        onClose={() => setShowRejectSubmit(false)}
-        className="grid place-items-center"
-      >
-        <ApproveModal
-          contractor={applys?.filter(
-                (ap: any) =>
-                  ap.user.toBase58() === escrowInfo.reciever.toBase58()
-              )[0].userName
-            }
-          amount={Number(escrowInfo.amount) / 1000_000}
-          title="Confirmation"
-          messageTitle="Are you sure you want to reject submission??"
-          messageDescription=""
-        >
-          <Button
-            onClick={() => RejectSubmit()}
-            variant="contained"
-            className="!normal-case !text-white !text-sm !bg-red-700 !px-8 !py-2"
-          >
-            Reject
-          </Button>
-        </ApproveModal>
-      </Modal>}
-      
-      {applys && select && escrowInfo && <Modal
-        open={showStartProject}
-        onClose={() => setShowStartProject(false)}
-        className="grid place-items-center"
-      >
-        <ApproveModal
-          contractor={(applys.filter((escrow: any) => escrow.pubkey.toBase58() == select.toBase58()))[0].userName}
-          amount={Number(escrowInfo.amount) / 1000_000}
-          title="Confirmation"
-          messageTitle="Are you sure to start the contract??"
-          messageDescription="Contract can oly be terminated by both parties mutually agreeing to do so"
-        >
-          <Button
-            onClick={() => approve()}
-            variant="contained"
-            className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-2"
-          >
-            Start Contract
-          </Button>
-        </ApproveModal>
-      </Modal>}
-
-      <Modal
-        open={showApprove}
-        onClose={() => setShowApprove(false)}
-        className="grid place-items-center"
-      >
-        <ApproveModal
-          title="Dispute Request"
-          messageTitle="Are you sure you want tot request a dispute??"
-          messageDescription={
-            <>
-              To prevent abuse, we charge a dispute resolution fee.
-              <br />
-              Please try as much as pussible to resolve your issues before
-              opening a dispute.
-            </>
-          }
-        >
-          <Button
-            variant="contained"
-            onClick={() => OpenDispute()}
-            // onClick={handleOpenDispute}
-            className="!normal-case !text-white !text-xs !bg-black !px-16 !py-2"
-          >
-            Open dispute
-          </Button>
-        </ApproveModal>
-      </Modal>
-
-      <Modal
-        open={isDescriptionModalOpen}
-        onClose={handleDescriptionModalClose}
-        aria-labelledby="description-modal"
-        aria-describedby="edit-description"
-      >
-        <div className="bg-white p-5 rounded-md w-[90%] md:w-[60rem]  mx-auto mt-32 max-h-[70vh] overflow-y-auto">
-          <h2 id="description-modal-title" className="text-xl font-semibold">
-            Edit Description
-          </h2>
-          <textarea
-            className="w-full h-[50rem] mt-3 p-2 border rounded-md focus:outline-none"
-            value={descriptionInput}
-            onChange={(e) => setDescriptionInput(e.target.value)}
-          />
-          {descriptionError && (
-            <p className="text-red-500 mt-2">{descriptionError}</p>
-          )}
-          <div className="flex justify-end gap-3 mt-4">
-            <Button
-              variant="contained"
-              onClick={() => updateDescription()}
-              disabled={descriptionInput === originalDescription}
-            >
-              Save
-            </Button>
-            <Button variant="outlined" onClick={handleDescriptionModalClose}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      </Modal>
-    </div>
+    </Suspense>
   );
 }

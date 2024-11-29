@@ -11,6 +11,53 @@ import {
 } from "@solana/wallet-adapter-react";
 import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
+import { backendApi, EscrowResponse } from "@/lib/utils/api.util";
+
+// Add after imports
+interface EscrowInfo {
+  data: Array<{
+    escrowAddress: string;
+    createdAt: number;
+  }>;
+}
+
+// Add this at the top level
+const logContractState = (es: any) => {
+  console.log("Raw Contract State:", {
+    contractName: es.contractName,
+    status: es.status,
+    submitted: es.submitted,
+    approved: es.approved,
+    completed: es.completed,
+    terminated: es.terminated,
+    reciever: es.reciever?.toBase58(),
+    founder: es.founder?.toBase58(),
+    rawStatus: es.status,
+    bump: es.bump,
+    amount: es.amount?.toString(),
+  });
+};
+
+// Update the isPastContract function
+const isPastContract = (es: any) => {
+  logContractState(es);
+  
+  // Check if contract is past based on raw status
+  const isPast = 
+    es.status >= 3 || // Status 3 or higher
+    (es.submitted === 1 && es.approved === 1) || // Both flags set
+    es.completed === 1 || // Completed flag
+    es.terminated === 1; // Terminated flag
+    
+  console.log(`Contract ${es.contractName} isPast:`, isPast, {
+    statusCheck: es.status >= 3,
+    submittedApproved: (es.submitted === 1 && es.approved === 1),
+    completed: es.completed === 1,
+    terminated: es.terminated === 1
+  });
+  
+  return isPast;
+};
 
 export default function page() {
   const [escrows, setEscrows] = useState<any[]>();
@@ -21,16 +68,73 @@ export default function page() {
 
   const getEscrow = async () => {
     try {
-      console.log("wow");
-      const escrow = await getFounderEscrow(
-        connection,
-        anchorWallet!,
-        "confirmed"
-      );
-      setEscrows(escrow);
-      console.log(escrow);
+      const escrow = await getFounderEscrow(connection, anchorWallet!, "confirmed");
+      console.log("Raw escrow data:", escrow);
+      const databaseEscrowInfo = await backendApi.get<EscrowResponse>(`/escrow`);
+      
+      if (!databaseEscrowInfo || !databaseEscrowInfo.data) {
+        console.error('No escrow data received from backend');
+        return;
+      }
+      
+      // Create a timestamp map for faster lookup
+      const timestampMap = new Map();
+      
+      databaseEscrowInfo.data.forEach(data => {
+        try {
+          // Convert ISO date string to timestamp
+          const timestamp = new Date(data.createdAt).getTime();
+          if (!isNaN(timestamp)) {
+            timestampMap.set(data.escrowAddress, timestamp);
+          }
+        } catch (err) {
+          console.error('Error processing timestamp for escrow:', data.escrowAddress, err);
+        }
+      });
+      
+      // Add timestamps to all escrows
+      const escrowsWithTimestamps = escrow.map(es => {
+        const pubkey = es.pubkey.toBase58();
+        const timestamp = timestampMap.get(pubkey);
+        
+        // Determine real status based on contract state
+        let status = 0;
+        
+        if (es.status === 5) {
+          status = 5; // In Dispute
+        } else if (es.status === 6) {
+          status = 6; // Completed
+        } else if (es.status === 7) {
+          status = 7; // Terminated
+        } else if (es.submitted && es.approved) {
+          status = 3; // Work Approved
+        } else if (!es.reciever) {
+          status = 0; // Not Started
+        } else if (es.submitted) {
+          status = 2; // Work Submitted
+        } else if (es.reciever) {
+          status = 1; // Contract Started
+        }
+
+        return {
+          ...es,
+          createdAt: timestamp || 0,
+          status: status
+        };
+      });
+      
+      // Sort by status change first, then by creation time
+      const sortedEscrows = [...escrowsWithTimestamps].sort((a, b) => {
+        // First sort by status change
+        if (a.lastStatusChange !== b.lastStatusChange) {
+          return b.lastStatusChange - a.lastStatusChange;
+        }
+        // Then by creation time
+        return b.createdAt - a.createdAt;
+      });
+      setEscrows(sortedEscrows);
     } catch (e) {
-      console.log(e);
+      console.error('Error in getEscrow:', e);
     }
   };
 
@@ -40,6 +144,29 @@ export default function page() {
   }, [anchorWallet]);
 
   const [openContracts, setOpenContracts] = useState(true);
+  const [showPastContracts, setShowPastContracts] = useState(false);
+
+  // Add this before the return statement to debug
+  useEffect(() => {
+    if (escrows) {
+      console.log("Escrows status breakdown:", escrows.map(es => ({
+        name: es.contractName,
+        status: es.status,
+        hasReceiver: !!es.reciever
+      })));
+    }
+  }, [escrows]);
+
+  // Add debug logging
+  useEffect(() => {
+    if (escrows) {
+      console.log("Past contracts check:", {
+        allEscrows: escrows,
+        pastContracts: escrows.filter((es) => es.status === 6 || es.status === 7 || es.status === 3),
+        showPastContracts
+      });
+    }
+  }, [escrows, showPastContracts]);
 
   return (
     <div>
@@ -56,61 +183,95 @@ export default function page() {
           >
             <motion.button
               className="disabled:text-black"
-              onClick={() => setOpenContracts(true)}
-              disabled={openContracts}
+              onClick={() => {
+                setOpenContracts(true);
+                setShowPastContracts(false);
+              }}
+              disabled={openContracts && !showPastContracts}
             >
               My Open contracts
             </motion.button>
 
             <motion.button
               className="disabled:text-black"
-              onClick={() => setOpenContracts(false)}
-              disabled={!openContracts}
+              onClick={() => {
+                setOpenContracts(false);
+                setShowPastContracts(false);
+              }}
+              disabled={!openContracts && !showPastContracts}
             >
               Disputes
             </motion.button>
           </Stack>
-          <div className="pt-[3px] cursor-pointer">View past contracts</div>
+          <motion.button
+            className={`pt-[3px] cursor-pointer ${showPastContracts ? 'text-black' : ''}`}
+            onClick={() => setShowPastContracts(!showPastContracts)}
+          >
+            View past contracts
+          </motion.button>
         </Stack>
 
         <Stack spacing={2.8} mt={3}>
-          {escrows && (openContracts ?
-            escrows.filter((es) => (es.status !== 5 && es.status !== 6)).map((el, i) => (
-              <CardContract
-                key={i}
-                contractName={el.contractName}
-                amount={Number(el.amount)}
-                deadline={Number(el.deadline)}
-                escrow={el.pubkey.toBase58()}
-                type={1}
-              />
-            ))
+          {escrows && (
+            showPastContracts ? 
+              // Show completed and terminated contracts
+              escrows
+                .filter(isPastContract)
+                .map((el, i) => {
+                  const status = 
+                    el.completed ? "Completed" :
+                    el.terminated ? "Terminated" :
+                    el.submitted && el.approved ? "Work Approved" :
+                    el.status === 6 ? "Completed" :
+                    el.status === 7 ? "Terminated" :
+                    "Unknown";
+
+                  return (
+                    <CardContract
+                      key={i}
+                      contractName={el.contractName}
+                      amount={Number(el.amount)}
+                      deadline={Number(el.deadline)}
+                      escrow={el.pubkey.toBase58()}
+                      createdAt={el.createdAt}
+                      status={status}
+                      type={1}
+                    />
+                  );
+                })
+            : openContracts ?
+              // Show only active contracts (not disputes, completed, or terminated)
+              escrows
+                .filter((es) => es.status < 5 && es.status !== 3)  // Exclude completed (3)
+                .map((el, i) => (
+                  <CardContract
+                    key={i}
+                    contractName={el.contractName}
+                    amount={Number(el.amount)}
+                    deadline={Number(el.deadline)}
+                    escrow={el.pubkey.toBase58()}
+                    createdAt={el.createdAt}
+                    status={el.status}
+                    type={1}
+                  />
+                ))
             :
-            escrows.filter((es) => es.status === 5).map((el, i) => (
-              <CardContract
-                key={i}
-                contractName={el.contractName}
-                amount={Number(el.amount)}
-                deadline={Number(el.deadline)}
-                escrow={el.pubkey.toBase58()}
-                type={1}
-              />
-            )))
-          }
-
-          {/* Disputes Logic */}
-
-          {/* {!openContracts && disputes &&
-            disputes.map((el, i) => (
-              <CardContract
-                key={i}
-                contractName={el.contractName}
-                amount={Number(el.amount)}
-                deadline={Number(el.deadline)}
-                escrow={el.pubkey.toBase58()}
-                type={1}
-              />
-            ))} */}
+              // Show only disputes
+              escrows
+                .filter((es) => es.status === 5)
+                .map((el, i) => (
+                  <CardContract
+                    key={i}
+                    contractName={el.contractName}
+                    amount={Number(el.amount)}
+                    deadline={Number(el.deadline)}
+                    escrow={el.pubkey.toBase58()}
+                    createdAt={el.createdAt}
+                    status={el.status}
+                    type={1}
+                  />
+                ))
+          )}
         </Stack>
       </Card>
     </div>

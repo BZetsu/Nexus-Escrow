@@ -14,6 +14,13 @@ import {
 import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
 
+interface EscrowInfo {
+  data: Array<{
+    escrowAddress: string;
+    createdAt: number;
+  }>;
+}
+
 export default function page() {
   const [pendingEscrow, setPendingEscrow] = useState<any[]>();
   const [ongoingEscrow, setOngoingEscrow] = useState<any[]>();
@@ -24,38 +31,28 @@ export default function page() {
 
   const getPendingEscrow = async () => {
     try {
-      const pending = await getApplyFreelancer(
-        anchorWallet,
-        connection,
-        "confirmed"
-      );
+      const pending = await getApplyFreelancer(anchorWallet, connection, "confirmed");
       const data = await backendApi.get(`/freelancer?freelancerAddress=${pending[0].user.toBase58()}`);
-      console.log(data);
-
-      ((data as any).data as any[])!.map((dt: any, id: number) => {
-        pending.map((pd: any, num: number) => {
-          if (dt.escrowAddress == pd.escrow.toBase58()) {
-            console.log(num);
-            console.log(dt.escrowAddress);
-            console.log(pd.escrow.toBase58());
-            console.log(dt.amount);
-            console.log(dt.contactName);
+      
+      // Add data and timestamps
+      ((data as any).data as any[])!.forEach((dt: any, id: number) => {
+        pending.forEach((pd: any, num: number) => {
+          if (dt.escrowAddress === pd.escrow.toBase58()) {
             pending[num].escrowName = dt.contactName;             
             pending[num].amount = dt.amount;             
-            pending[num].deadline = dt.deadline;             
+            pending[num].deadline = dt.deadline;
+            pending[num].createdAt = dt.createdAt || Math.floor(Date.now() / 1000);
           }
-        })
-      })
-
-      console.log("pending");
-      console.log(pending.filter((p) => p.status != "Success"));
-      setPendingEscrow(pending.filter((p) => (p.status != "Success" && p.status != "Rejected")));
-      console.log(pending[0].user.toBase58());
-
-      /// GET THE APPLY of the freelancerAddress
-      //Get all applications of a freelancer
-      console.log("data")
+        });
+      });
       
+      // Sort with newest first
+      pending.sort((a, b) => {
+        const timeA = a.createdAt || Date.now() / 1000;
+        const timeB = b.createdAt || Date.now() / 1000;
+        return timeB - timeA;
+      });
+      setPendingEscrow(pending.filter((p) => (p.status != "Success" && p.status != "Rejected")));
     } catch (e) {
       console.log(e);
     }
@@ -63,16 +60,45 @@ export default function page() {
 
   const getOngoingEscrow = async () => {
     try {
-      const ongoing = await getFreeLacerEscrow(
-        anchorWallet,
-        connection,
-        "confirmed"
-      );
-      console.log("ongoing");
-      console.log(ongoing);
-      setOngoingEscrow(ongoing);
+      const ongoing = await getFreeLacerEscrow(anchorWallet, connection, "confirmed");
+      const databaseEscrowInfo = await backendApi.get(`/escrow`);
+      
+      // Create a timestamp map for faster lookup
+      const timestampMap = new Map();
+      (databaseEscrowInfo as EscrowInfo).data.forEach(data => {
+        timestampMap.set(data.escrowAddress, data.createdAt);
+      });
+      
+      // Add timestamps to all escrows
+      const ongoingWithTimestamps = ongoing.map(es => {
+        const pubkey = es.pubkey.toBase58();
+        const timestamp = timestampMap.get(pubkey);
+        
+        // Log raw escrow data
+        console.log("Raw escrow data:", {
+          pubkey,
+          status: es.status,
+          submitted: es.submitted,
+          approved: es.approved
+        });
 
-  
+        let status = es.status;  // Keep original status
+        
+        // Only override for specific cases
+        if (es.submitted && es.approved) {
+          status = 3;  // Work Approved
+        }
+
+        return {
+          ...es,
+          createdAt: timestamp || 0,
+          status: status
+        };
+      });
+      
+      // Sort by timestamp (newest first)
+      const sortedOngoing = ongoingWithTimestamps.sort((a, b) => b.createdAt - a.createdAt);
+      setOngoingEscrow(sortedOngoing);
     } catch (e) {
       console.log(e);
     }
@@ -91,6 +117,42 @@ export default function page() {
   ];
 
   const [value, setValue] = useState(0);
+
+  // Update the getStatusText function
+  const getStatusText = (status: number | string, isPending: boolean, hasReceiver: boolean) => {
+    console.log("Status check:", { status, isPending, hasReceiver, value });
+
+    // For pending applications
+    if (isPending || status === 'panding' || status === 'pending') {
+      return "Pending";
+    }
+
+    // For ongoing contracts view
+    if (value === 0) {
+      return "Contract Started";
+    }
+
+    // For disputes
+    if (status === 5) {
+      return "In Dispute";
+    }
+
+    return "Not Started";
+  };
+
+  // Add more detailed logging
+  useEffect(() => {
+    if (ongoingEscrow) {
+      console.log("Detailed escrow status check:", ongoingEscrow.map(es => ({
+        name: es.contractName,
+        status: es.status,
+        submitted: es.submitted,
+        approved: es.approved,
+        reciever: !!es.reciever,
+        rawStatus: es.status
+      })));
+    }
+  }, [ongoingEscrow]);
 
   return (
     <div>
@@ -111,31 +173,52 @@ export default function page() {
             ))}
           </div>
           <Stack mt={4} spacing={2.8}>
-            {ongoingEscrow &&
-              (
-                value === 0 ?
-                  ongoingEscrow.filter((es) => es.status !== 5).map((el, i) => (
-                    <CardContract
-                      key={i}
-                      contractName={el.contractName}
-                      amount={Number(el.amount)}
-                      deadline={Number(el.deadline)}
-                      escrow={el.pubkey.toBase58()}
-                      type={3}
-                    />
-                  ))
-                  :
-                  ongoingEscrow.filter((es) => es.status === 5).map((el, i) => (
-                    <CardContract
-                      key={i}
-                      contractName={el.contractName}
-                      amount={Number(el.amount)}
-                      deadline={Number(el.deadline)}
-                      escrow={el.pubkey.toBase58()}
-                      type={3}
-                    />
-                  )))
-            }
+            {value === 0 ? (
+              // Ongoing Contracts
+              ongoingEscrow?.filter(es => es.reciever && es.status !== 5)
+                .map((el, i) => (
+                  <CardContract
+                    key={i}
+                    contractName={el.contractName}
+                    amount={Number(el.amount)}
+                    deadline={Number(el.deadline)}
+                    escrow={el.pubkey.toBase58()}
+                    createdAt={el.createdAt}
+                    status="Contract Started"
+                    type={3}
+                  />
+                ))
+            ) : value === 1 ? (
+              // Disputes
+              ongoingEscrow?.filter(es => es.status === 5)
+                .map((el, i) => (
+                  <CardContract
+                    key={i}
+                    contractName={el.contractName}
+                    amount={Number(el.amount)}
+                    deadline={Number(el.deadline)}
+                    escrow={el.pubkey.toBase58()}
+                    createdAt={el.createdAt}
+                    status="In Dispute"
+                    type={3}
+                  />
+                ))
+            ) : (
+              // Past Contracts
+              ongoingEscrow?.filter(es => es.status === 6 || es.status === 7)
+                .map((el, i) => (
+                  <CardContract
+                    key={i}
+                    contractName={el.contractName}
+                    amount={Number(el.amount)}
+                    deadline={Number(el.deadline)}
+                    escrow={el.pubkey.toBase58()}
+                    createdAt={el.createdAt}
+                    status={el.status === 6 ? "Completed" : "Terminated"}
+                    type={3}
+                  />
+                ))
+            )}
           </Stack>
         </Card>
 
@@ -145,8 +228,16 @@ export default function page() {
           <Stack mt={4} spacing={2.8}>
             {pendingEscrow &&
               pendingEscrow.map((el, i) => (
-                <CardContract key={i} {...el} contractName={el.escrowName} type={3} />
-              ))}
+                <CardContract 
+                  key={i} 
+                  {...el} 
+                  contractName={el.escrowName} 
+                  createdAt={el.createdAt} 
+                  status={getStatusText(el.status, true, false)} 
+                  type={3} 
+                />
+              ))
+            }
           </Stack>
         </Card>
       </div>

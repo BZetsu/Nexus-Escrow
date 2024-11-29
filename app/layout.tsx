@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "../styles/fonts.css";
+import dynamic from 'next/dynamic';
 import TopNavbar from "@/components/Navbar/TopNavbar";
 import MuiTheme from "@/components/MuiTheme";
 import Form from "@/contexts/FormContext";
@@ -57,6 +58,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://res.cloudinary.com" />
+        <link rel="dns-prefetch" href="https://res.cloudinary.com" />
+      </head>
       <body className="font-inter">
         <AppWalletProvider>
           <MuiTheme>

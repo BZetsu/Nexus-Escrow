@@ -7,7 +7,12 @@ const nextConfig = {
       styledComponents: true
     },
     experimental: {
-      esmExternals: false
+      esmExternals: false,
+      optimizeCss: true,
+      optimizePackageImports: ['@mui/material', '@mui/icons-material', 'react-icons'],
+      scrollRestoration: true,
+      workerThreads: true,
+      cpus: 4
     },
     images: {
       remotePatterns: [
@@ -30,7 +35,11 @@ const nextConfig = {
         }
       ],
       domains: ['res.cloudinary.com'],
-      unoptimized: true
+      unoptimized: false,
+      minimumCacheTTL: 60,
+      formats: ['image/webp'],
+      deviceSizes: [640, 828, 1200, 1920],
+      imageSizes: [16, 32, 64, 96, 128, 256],
     },
     webpack: (config) => {
       config.resolve.alias = {
