@@ -298,10 +298,10 @@ export default function page() {
   };
 
   const getStatusText = (status: number) => {
-    if (status === 0 || !status) {
-      return <span className="italic text-gray-600">Pending...</span>;
+    if (status === 0) {
+      return <span className="italic">Pending...</span>;
     }
-    // ... rest of the status checks
+    // ... rest of status checks
   };
 
   return (
@@ -402,8 +402,8 @@ export default function page() {
             <Card width="lg" className="h-fit">
               <div className="text-sm text-textColor mb-3">Description</div>
               <div className="text-[13px] leading-7 text-gray-700">
-                {escrow_info_data?.[0]?.description ? (
-                  <div>{escrow_info_data[0].description}</div>
+                {escrow_info?.description ? (
+                  <div>{escrow_info.description}</div>
                 ) : (
                   <div className="text-gray-500">No description available</div>
                 )}

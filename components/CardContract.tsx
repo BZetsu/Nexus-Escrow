@@ -8,7 +8,6 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import { Button } from "@mui/material";
-import { CiFileOn } from "react-icons/ci";
 
 // interface CardContractType {
 //   contractName: string;
@@ -27,7 +26,6 @@ export default function CardContract({
   status,
   isPending,
   onCancelApply,
-  materials,
 }: any) {
   const router = useRouter();
   const path = usePathname();
@@ -76,11 +74,12 @@ export default function CardContract({
     return `${minutes}m`;
   };
 
-  const getStatusText = (status: any) => {
+  const getStatus = (status: number) => {
     console.log('Status received:', status, typeof status);
     
-    if (status?.isPending || status === 0) {
-      return "Pending...";  // Return string instead of JSX
+    // Default to Not Started
+    if (status === undefined || status === null || status === 0) {
+      return "Not Started";
     }
     
     switch(status) {
@@ -99,7 +98,7 @@ export default function CardContract({
       case 7:
         return "Terminated";
       default:
-        return "Pending...";
+        return "Not Started";
     }
   };
 
@@ -113,10 +112,6 @@ export default function CardContract({
     }
   };
 
-  const links = (link: string) => {
-    if (link) window.open(link, "_blank");
-  };
-
   return (
     <motion.button
       whileHover={{ x: 5 }}
@@ -128,7 +123,7 @@ export default function CardContract({
       }`}>
         {status !== 0 && status !== 1 && (
           <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" 
-               title={getStatusText(status)}>
+               title={getStatus(status)}>
           </div>
         )}
         <div className="flex flex-col h-full justify-between">
@@ -141,17 +136,13 @@ export default function CardContract({
               <div className="flex items-center text-xs mt-1">
                 <span className="text-gray-500 mr-1">Status:</span>
                 <span className={
-                  status?.isPending || status === 0 
-                    ? 'italic text-gray-400 font-light'
-                    : status === 6 
-                    ? 'text-green-500' 
-                    : status === 5 
-                    ? 'text-red-500' 
-                    : status === 1 
-                    ? 'text-blue-500' 
-                    : 'text-gray-500'
+                  !status ? 'text-gray-500' : 
+                  status === 6 ? 'text-green-500' : 
+                  status === 5 ? 'text-red-500' : 
+                  status === 1 ? 'text-blue-500' : 
+                  'text-gray-500'
                 }>
-                  {getStatusText(status)}
+                  {getStatus(status)}
                 </span>
               </div>
             </div>
@@ -166,37 +157,21 @@ export default function CardContract({
             </div>
           </div>
 
-          {(status?.isPending || status === 0) && (
-            <div className="mt-4 border-t border-gray-200 pt-4">
-              <div className="flex gap-3 items-start">
-                <div className="flex-shrink-0">
-                  <div className="p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         links(materials);
-                       }}>
-                    <CiFileOn className="text-3xl text-gray-600" />
-                    <div className="text-[10px] mt-1 text-gray-600">Resources</div>
-                  </div>
-                </div>
-                
-                <div className="flex-1 flex flex-col gap-2">
-                  <div className="text-xs text-gray-500 italic">
-                    Your application has been sent
-                  </div>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCancelApply && onCancelApply();
-                    }}
-                    className="!text-xs !border-gray-300 !text-gray-600 !normal-case !py-1"
-                  >
-                    Cancel Application
-                  </Button>
-                </div>
+          {isPending && (
+            <div className="mt-4 text-center">
+              <div className="text-sm text-gray-600 mb-3">
+                Your Application has been sent
               </div>
+              <Button
+                variant="contained"
+                className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-second !mx-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCancelApply && onCancelApply(escrow.toString());
+                }}
+              >
+                Cancel Application
+              </Button>
             </div>
           )}
 
