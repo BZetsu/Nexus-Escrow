@@ -18,6 +18,9 @@ import { ClientTerminat } from "@/lib/NexusProgram/escrow/CTerminate";
 import { RequestNewSubmition } from "@/lib/NexusProgram/escrow/RequestNewSubmition";
 import { links } from "@/app/layout";
 
+// Add Discord link constant at the top
+const DISCORD_LINK = "https://discord.gg/VmgUWefjsZ";
+
 export default function CardAccordionAccept({
   children,
   data,
@@ -228,6 +231,19 @@ export default function CardAccordionAccept({
               }
             </div>
           </motion.button>
+
+          {escrowInfo?.status === 5 && (
+            <div className="flex justify-center mt-4 mb-2">
+              <Button
+                onClick={() => window.open(DISCORD_LINK, '_blank')}
+                variant="contained"
+                size="small"
+                className="!normal-case !text-xs !text-white !bg-black hover:!bg-gray-800 !min-w-[120px] !py-2 !px-6"
+              >
+                Resolve Dispute
+              </Button>
+            </div>
+          )}
 
           {escrowInfo.status == 9 && (
             <CardAnimation className="grid grid-cols-2 mt-4 gap-2">

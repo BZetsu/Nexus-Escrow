@@ -97,21 +97,15 @@ export default function page() {
         const pubkey = es.pubkey.toBase58();
         const timestamp = timestampMap.get(pubkey);
         
-        // Determine real status based on contract state
+        // Simplified status determination
         let status = 0;
         
         if (es.status === 5) {
           status = 5; // In Dispute
-        } else if (es.status === 6) {
+        } else if (es.status === 6 || es.completed) {
           status = 6; // Completed
-        } else if (es.status === 7) {
+        } else if (es.status === 7 || es.terminated) {
           status = 7; // Terminated
-        } else if (es.submitted && es.approved) {
-          status = 3; // Work Approved
-        } else if (!es.reciever) {
-          status = 0; // Not Started
-        } else if (es.submitted) {
-          status = 2; // Work Submitted
         } else if (es.reciever) {
           status = 1; // Contract Started
         }
@@ -162,7 +156,7 @@ export default function page() {
     if (escrows) {
       console.log("Past contracts check:", {
         allEscrows: escrows,
-        pastContracts: escrows.filter((es) => es.status === 6 || es.status === 7 || es.status === 3),
+        pastContracts: escrows.filter((es) => es.status === 6 || es.status === 7),
         showPastContracts
       });
     }
@@ -216,15 +210,10 @@ export default function page() {
             showPastContracts ? 
               // Show completed and terminated contracts
               escrows
-                .filter(isPastContract)
+                .filter(es => es.status === 6 || es.status === 7) // Only completed or terminated
                 .map((el, i) => {
-                  const status = 
-                    el.completed ? "Completed" :
-                    el.terminated ? "Terminated" :
-                    el.submitted && el.approved ? "Work Approved" :
-                    el.status === 6 ? "Completed" :
-                    el.status === 7 ? "Terminated" :
-                    "Unknown";
+                  const status = el.status === 6 ? "Completed" : "Terminated";
+                  console.log("Past contract:", { name: el.contractName, status: el.status });
 
                   return (
                     <CardContract
