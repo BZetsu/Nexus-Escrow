@@ -29,14 +29,15 @@ import { backendApi } from "@/lib/utils/api.util";
 import ApproveModal from "@/components/ApproveModal";
 
 interface EscrowData {
-  data: {
+  data: Array<{
     contactName: string;
     deadline: number;
     amount: string;
     telegramLink: string;
     materials: string;
     description: string;
-  }
+    escrowAddress: string;
+  }>
 }
 
 interface FounderResponse {
@@ -183,25 +184,36 @@ export default function page() {
         return;
       }
 
+      // Get escrow data - handle 404 gracefully
+      let telegramContact = '';
+      try {
+        // Try with the raw address first
+        const databaseEscrowInfo = await backendApi.get<EscrowData>(`/escrow?escrowAddress=${address}`);
+        console.log("Escrow Database Info:", databaseEscrowInfo?.data);
+        
+        if (databaseEscrowInfo?.data) {
+          setEscrowInfoData(databaseEscrowInfo.data);
+        }
+      } catch (err) {
+        console.log("Error fetching escrow data:", err);
+        // Try alternate endpoint if first one fails
+        try {
+          const allEscrows = await backendApi.get<EscrowData>(`/escrow`);
+          const thisEscrow = allEscrows?.data?.find((e: any) => e.escrowAddress === address);
+          if (thisEscrow) {
+            setEscrowInfoData(thisEscrow);
+          }
+        } catch (e) {
+          console.log("Error fetching from alternate endpoint:", e);
+        }
+      }
+
       // Get founder info from blockchain
       const founder_info = await get_userr_info(
         anchorWallet,
         connection,
         info.founder
       );
-
-      // Get escrow data - handle 404 gracefully
-      let telegramContact = '';
-      try {
-        const databaseEscrowInfo = await backendApi.get<EscrowData>(`/escrow/${address}`);
-        if (databaseEscrowInfo?.data) {
-          const escrowTelegram = databaseEscrowInfo.data.telegramLink || '';
-          telegramContact = escrowTelegram.replace('https://t.me/', '').replace('@', '').trim();
-          setEscrowInfoData(databaseEscrowInfo.data);
-        }
-      } catch (err) {
-        console.log("Error fetching escrow data:", err);
-      }
 
       // Set founder info even if database lookup fails
       info.founderInfo = {
@@ -283,6 +295,13 @@ export default function page() {
 
   const links = (link: string) => {
     window.open(link, "_blank");
+  };
+
+  const getStatusText = (status: number) => {
+    if (status === 0 || !status) {
+      return <span className="italic text-gray-600">Pending...</span>;
+    }
+    // ... rest of the status checks
   };
 
   return (
@@ -376,38 +395,19 @@ export default function page() {
                   </div>
                 </div>
               </Stack>
-
-              <div className="flex justify-center mt-8 mb-4">
-                <Button
-                  onClick={() => {
-                    if (escrow_info_data?.telegramLink) {
-                      let link = escrow_info_data.telegramLink;
-                      link = link.replace('https://t.me/', '')
-                                .replace('@', '')
-                                .trim();
-                      link = `https://t.me/${link}`;
-                      links(link);
-                    }
-                  }}
-                  variant="contained"
-                  className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-second !text-white"
-                  disabled={!escrow_info_data?.telegramLink}
-                >
-                  Start Chat
-                </Button>
-              </div>
             </Stack>
           </Card>
 
           <div className="sm:col-span-3">
             <Card width="lg" className="h-fit">
-              <div className="text-sm text-textColor">Description</div>
-
-              {escrow_info_data && <div className="py-3 mt-3">
-                <div className="line-clamp-5 text-5 text-[13px] leading-7">
-                  {escrow_info_data.description}
-                </div>
-              </div>}
+              <div className="text-sm text-textColor mb-3">Description</div>
+              <div className="text-[13px] leading-7 text-gray-700">
+                {escrow_info_data?.[0]?.description ? (
+                  <div>{escrow_info_data[0].description}</div>
+                ) : (
+                  <div className="text-gray-500">No description available</div>
+                )}
+              </div>
             </Card>
             {/* {escrow_info && (
               <span onClick={() => links(escrow_info.materials)}>
@@ -462,7 +462,7 @@ export default function page() {
                     </Card>
                   </div>
                 </div>}
-              {escrow_info && applyInfo && (
+              {escrow_info && applyInfo && escrow_info.status === 0 && (
                 <div className="flex gap-2 mt-4 px-4 pb-4">
                   <Card className="!w-fit !py-2 text-center !px-2 grid place-content-center">
                     <CiFileOn className="text-6xl mx-auto" />
