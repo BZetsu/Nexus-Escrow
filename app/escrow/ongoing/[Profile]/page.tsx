@@ -28,6 +28,27 @@ import { timeLeft } from "@/lib/utils/time_formatter";
 import { backendApi } from "@/lib/utils/api.util";
 import ApproveModal from "@/components/ApproveModal";
 
+interface EscrowData {
+  data: {
+    contactName: string;
+    deadline: number;
+    amount: string;
+    telegramLink: string;
+    materials: string;
+    description: string;
+  }
+}
+
+interface FounderResponse {
+  data: Array<{
+    image: string;
+    name: string;
+    twitter: string;
+    address: string;
+    userId: string;
+  }>
+}
+
 export default function page() {
   const [material, setMaterial] = useState<string>("");
   const [deadline, setDeadline] = useState<any>();
@@ -157,53 +178,63 @@ export default function page() {
       const escrow = new web3.PublicKey(address);
       const info = await getEscrowInfo(anchorWallet, connection, escrow);
       
-      // Get escrow data from database
-      const databaseEscrowInfo = await backendApi.get(`/escrow/${address}`);
-      if ((databaseEscrowInfo as any)?.data) {
-        setEscrowInfoData((databaseEscrowInfo as any).data);
+      if (!info || !info.founder) {
+        console.log("No escrow info or founder found");
+        return;
       }
-      
+
       // Get founder info from blockchain
       const founder_info = await get_userr_info(
         anchorWallet,
         connection,
-        info!.founder
+        info.founder
       );
 
-      // Get all users and find founder
-      const allUsers = await backendApi.get<{data: any[]}>(`/nexus-user`);
-      const founderAddress = info!.founder.toBase58();
-      console.log("Founder Address to find:", founderAddress);
-
-      if (allUsers?.data) {
-        console.log("All Users:", allUsers.data.map(u => ({
-          userId: u.userId,
-          address: u.address,
-          name: u.name
-        })));
-
-        const founderData = allUsers.data.find(
-          (user: any) => user.userId === founderAddress || user.address === founderAddress
-        );
-        
-        console.log("Found Founder Data:", founderData);
-        
-        if (founderData && founder_info) {
-          info!.founderInfo = {
-            ...founder_info,
-            image: founderData.image || dragon.src,
-            telegramId: founderData.telegramId || founderData.discordId || '',
-            name: founderData.name || founder_info?.name || "Unknown",
-            twitter: founderData.twitter || ''
-          };
-
-          console.log("Final Mapped Data:", info!.founderInfo);
-        } else if (founder_info) {
-          info!.founderInfo = founder_info;
+      // Get escrow data - handle 404 gracefully
+      let telegramContact = '';
+      try {
+        const databaseEscrowInfo = await backendApi.get<EscrowData>(`/escrow/${address}`);
+        if (databaseEscrowInfo?.data) {
+          const escrowTelegram = databaseEscrowInfo.data.telegramLink || '';
+          telegramContact = escrowTelegram.replace('https://t.me/', '').replace('@', '').trim();
+          setEscrowInfoData(databaseEscrowInfo.data);
         }
+      } catch (err) {
+        console.log("Error fetching escrow data:", err);
       }
 
-      console.log("Founder Info:", info!.founderInfo);
+      // Set founder info even if database lookup fails
+      info.founderInfo = {
+        ...founder_info,
+        image: dragon.src, // Fallback to dragon image
+        telegramId: telegramContact,
+        name: founder_info?.name || "Unknown",
+        twitter: ''
+      };
+
+      // Try to get additional founder info from database
+      try {
+        const founderResponse = await backendApi.get<FounderResponse>(`/nexus-user`);
+        if (founderResponse?.data?.length > 0) {
+          const founderData = founderResponse.data.find(
+            user => user.userId === info.founder.toBase58()
+          );
+          
+          if (founderData) {
+            info.founderInfo = {
+              ...info.founderInfo,
+              image: founderData.image && !founderData.image.includes('youtube.com')
+                ? founderData.image 
+                : dragon.src,
+              name: founderData.name || info.founderInfo.name,
+              twitter: founderData.twitter || ''
+            };
+          }
+        }
+      } catch (err) {
+        console.log("Error fetching founder data:", err);
+      }
+
       setEscrowInfo(info);
     } catch (e) {
       console.log("Error in getEscrowInfos:", e);
@@ -307,19 +338,20 @@ export default function page() {
           >
             <div className="p-2">
               <Image
-                src={escrow_info?.founderInfo?.image || dragon}
+                src={escrow_info?.founderInfo?.image || dragon.src}
                 alt={escrow_info?.founderInfo?.name || "Profile"}
                 width={500}
                 height={500}
                 className="w-full h-[180px] [@media(min-width:500px)]:h-[200px] sm:h-[250px] rounded-xl object-cover object-center"
                 onError={(e) => {
+                  console.log("Image load error, falling back to dragon.svg");
                   const target = e.target as HTMLImageElement;
                   target.src = dragon.src;
                 }}
               />
             </div>
 
-            <Stack pt={2} spacing={2} px={1} className="flex-1 flex flex-col">
+            <Stack pt={2} spacing={2} px={4} className="flex-1 flex flex-col">
               <Stack
                 flexDirection="row"
                 justifyContent="space-between"
@@ -345,25 +377,21 @@ export default function page() {
                 </div>
               </Stack>
 
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center mt-8 mb-4">
                 <Button
                   onClick={() => {
-                    if (escrow_info?.founderInfo?.telegramId) {
-                      let link = escrow_info.founderInfo.telegramId;
-                      // Remove any existing URL
-                      link = link.replace('https://www.youtube.com/', '')
-                                .replace('https://youtube.com/', '')
-                                .replace('https://t.me/', '')
-                                .replace('@', '');
-                      
-                      // Format as telegram link
+                    if (escrow_info_data?.telegramLink) {
+                      let link = escrow_info_data.telegramLink;
+                      link = link.replace('https://t.me/', '')
+                                .replace('@', '')
+                                .trim();
                       link = `https://t.me/${link}`;
                       links(link);
                     }
                   }}
                   variant="contained"
                   className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-second !text-white"
-                  disabled={!escrow_info?.founderInfo?.telegramId}
+                  disabled={!escrow_info_data?.telegramLink}
                 >
                   Start Chat
                 </Button>
@@ -372,7 +400,7 @@ export default function page() {
           </Card>
 
           <div className="sm:col-span-3">
-            <Card width="lg" className=" h-fit">
+            <Card width="lg" className="h-fit">
               <div className="text-sm text-textColor">Description</div>
 
               {escrow_info_data && <div className="py-3 mt-3">
@@ -434,14 +462,14 @@ export default function page() {
                     </Card>
                   </div>
                 </div>}
-              {escrow_info && applyInfo && escrow_info.status === 1 && (
-                <div className="flex gap-2 mt-4">
+              {escrow_info && applyInfo && (
+                <div className="flex gap-2 mt-4 px-4 pb-4">
                   <Card className="!w-fit !py-2 text-center !px-2 grid place-content-center">
                     <CiFileOn className="text-6xl mx-auto" />
-                    {escrow_info && (
+                    {escrow_info?.materials && (
                       <div
                         className="text-xs mt-1 hover:scale-105 transition-transform duration-200 cursor-pointer"
-                        onClick={() => links(escrow_info?.materials)}
+                        onClick={() => links(escrow_info.materials)}
                       >
                         Link to Resources
                       </div>
