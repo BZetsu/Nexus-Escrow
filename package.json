@@ -45,7 +45,8 @@
     "react-toastify": "^9.1.1",
     "sharp": "^0.33.5",
     "styled-components": "^6.1.13",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "critters": "^0.0.20"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

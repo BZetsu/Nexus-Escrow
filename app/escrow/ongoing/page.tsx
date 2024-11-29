@@ -13,6 +13,9 @@ import {
 } from "@solana/wallet-adapter-react";
 import { motion } from "framer-motion";
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { closeApply } from "@/lib/NexusProgram/escrow/FreelancercloseApply";
+import { web3 } from "@project-serum/anchor";
 
 interface EscrowInfo {
   data: Array<{
@@ -28,6 +31,7 @@ export default function page() {
   const anchorWallet = useAnchorWallet();
   const wallet = useWallet();
   const { connection } = useConnection();
+  const router = useRouter();
 
   const getPendingEscrow = async () => {
     try {
@@ -124,7 +128,7 @@ export default function page() {
 
     // For pending applications
     if (isPending || status === 'panding' || status === 'pending') {
-      return "Pending";
+      return <span className="italic">Pending...</span>;
     }
 
     // For ongoing contracts view
@@ -174,7 +178,7 @@ export default function page() {
           </div>
           <Stack mt={4} spacing={2.8}>
             {value === 0 ? (
-              // Ongoing Contracts
+              // Ongoing Contracts - force "Contract Started" status
               ongoingEscrow?.filter(es => es.reciever && es.status !== 5)
                 .map((el, i) => (
                   <CardContract
@@ -184,8 +188,9 @@ export default function page() {
                     deadline={Number(el.deadline)}
                     escrow={el.pubkey.toBase58()}
                     createdAt={el.createdAt}
-                    status="Contract Started"
+                    status={1}
                     type={3}
+                    onClick={() => router.push(`/escrow/ongoing/profile/${el.pubkey.toBase58()}`)}
                   />
                 ))
             ) : value === 1 ? (
@@ -227,16 +232,18 @@ export default function page() {
 
           <Stack mt={4} spacing={2.8}>
             {pendingEscrow &&
-              pendingEscrow.map((el, i) => (
-                <CardContract 
-                  key={i} 
-                  {...el} 
-                  contractName={el.escrowName} 
-                  createdAt={el.createdAt} 
-                  status={getStatusText(el.status, true, false)} 
-                  type={3} 
-                />
-              ))
+              pendingEscrow
+                .filter(el => el.status !== 6 && el.status !== 7) // Filter out completed/terminated
+                .map((el, i) => (
+                  <CardContract 
+                    key={i} 
+                    {...el} 
+                    contractName={el.escrowName} 
+                    createdAt={el.createdAt} 
+                    status={getStatusText(el.status, true, false)} 
+                    type={3}
+                  />
+                ))
             }
           </Stack>
         </Card>

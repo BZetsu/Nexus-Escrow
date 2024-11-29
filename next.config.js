@@ -8,7 +8,6 @@ const nextConfig = {
     },
     experimental: {
       esmExternals: false,
-      optimizeCss: true,
       optimizePackageImports: ['@mui/material', '@mui/icons-material', 'react-icons'],
       scrollRestoration: true,
       workerThreads: true,

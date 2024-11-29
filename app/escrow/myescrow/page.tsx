@@ -153,12 +153,14 @@ export default function page() {
 
   // Add debug logging
   useEffect(() => {
-    if (escrows) {
-      console.log("Past contracts check:", {
-        allEscrows: escrows,
-        pastContracts: escrows.filter((es) => es.status === 6 || es.status === 7),
-        showPastContracts
-      });
+    if (escrows && showPastContracts) {
+      console.log("All escrows:", escrows.map(es => ({
+        name: es.contractName,
+        status: es.status,
+        rawStatus: es.rawStatus,
+        completed: es.completed,
+        terminated: es.terminated
+      })));
     }
   }, [escrows, showPastContracts]);
 
@@ -210,10 +212,30 @@ export default function page() {
             showPastContracts ? 
               // Show completed and terminated contracts
               escrows
-                .filter(es => es.status === 6 || es.status === 7) // Only completed or terminated
+                .filter(es => {
+                  // Log each escrow being checked
+                  console.log("Checking escrow for past contracts:", {
+                    name: es.contractName,
+                    status: es.status,
+                    completed: es.completed,
+                    terminated: es.terminated
+                  });
+                  
+                  // Include contracts that are either completed, terminated, or have status 6/7
+                  return (
+                    es.completed === 1 ||
+                    es.terminated === 1 ||
+                    es.status === 6 ||
+                    es.status === 7 ||
+                    es.status === 3
+                  );
+                })
                 .map((el, i) => {
-                  const status = el.status === 6 ? "Completed" : "Terminated";
-                  console.log("Past contract:", { name: el.contractName, status: el.status });
+                  // Determine status text
+                  const status = 
+                    el.completed === 1 || el.status === 6 || el.status === 7 ? "Ended" :
+                    el.status === 3 ? "Work Approved" :
+                    "Ended";  // fallback
 
                   return (
                     <CardContract
