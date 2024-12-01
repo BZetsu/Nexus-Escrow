@@ -14,10 +14,23 @@ export async function getEscrowInfo(
 
         const program = new Program(idl, idl.metadata.address, provider);
         const account = await program.account.escrow.fetchNullable(escrow);
-        console.log(account);
-        console.log("account");
+        
+        if (account) {
+            console.log("Raw Escrow Account Data:", {
+                founder: account.founder.toBase58(),
+                escrowAddress: escrow.toBase58(),
+                status: account.status,
+                contractName: account.contractName,
+                fullAccount: account
+            });
+        } else {
+            console.log("No escrow account found for address:", escrow.toBase58());
+        }
+        
         return account;
-    } catch (e) {
-        console.log(e);
+    } catch (e: any) {
+        console.error("Error in getEscrowInfo:", e);
+        console.error("Error stack:", e.stack);
+        throw e;
     }
 }
