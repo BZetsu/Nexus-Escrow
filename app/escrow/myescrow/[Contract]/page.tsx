@@ -32,6 +32,8 @@ import { rejectFreelancerSubmit } from "@/lib/NexusProgram/escrow/rejectFreelanc
 import { approvePayment } from "@/lib/NexusProgram/escrow/ApprovePayment";
 import { cancelEscrow } from "@/lib/NexusProgram/escrow/cancel_escrow";
 import { useEscrowCache } from "@/lib/hooks/useEscrowCache";
+import { USER_PREFIX } from "@/lib/constants/constants";
+const idl = require("@/data/nexus.json");
 
 // Add loading component
 const LoadingState = () => (
@@ -103,71 +105,36 @@ export default function page() {
       const escrow = new web3.PublicKey(address);
       const info = await getEscrowInfo(anchorWallet, connection, escrow);
       
-      if (!info || !info.founder) {
+      if (!info) {
         console.error('Invalid escrow info');
-        router.push(`/escrow/${address}`);
         return false;
       }
 
-      // Get user info from backend
-      try {
-        interface UserData {
-          userId: string;
-          address: string;
-          name: string;
-          roles: string[];
-          image: string;
-          timeZone: string | null;
-          country: string | null;
-          twitter: string;
-        }
+      // Try both direct wallet comparison and PDA comparison
+      const PROGRAM_ID = new web3.PublicKey(idl.metadata.address);
+      const [expectedFounder] = web3.PublicKey.findProgramAddressSync(
+        [anchorWallet.publicKey.toBuffer(), Buffer.from(USER_PREFIX)],
+        PROGRAM_ID
+      );
 
-        interface UserResponse {
-          data: UserData[];
-          success: boolean;
-          message: string;
-        }
+      const isFounderByPDA = info.founder.equals(expectedFounder);
+      const isFounderByWallet = info.founder.equals(anchorWallet.publicKey);
 
-        const response = await backendApi.get<UserResponse>(`/nexus-user`);
-        const users = response.data;
+      console.log("Comprehensive Access Check:", {
+        connectedWallet: anchorWallet.publicKey.toBase58(),
+        escrowFounder: info.founder.toBase58(),
+        calculatedFounderPDA: expectedFounder.toBase58(),
+        isFounderByPDA,
+        isFounderByWallet,
+        escrowInfo: info
+      });
 
-        console.log("Backend Response:", users);
-        
-        if (!users || users.length === 0) {
-          console.error('No user data received');
-          return false;
-        }
+      // Allow access if either check passes
+      return isFounderByPDA || isFounderByWallet;
 
-        // Find the user with matching wallet address
-        const currentUser = users.find(
-          (user: UserData) => user.address === anchorWallet.publicKey.toBase58()
-        );
-
-        console.log("Current User:", currentUser);
-        console.log("Founder Address:", info.founder.toBase58());
-        
-        if (currentUser) {
-          const isFounder = info.founder.toBase58() === currentUser.userId;
-          console.log("Access Check:", {
-            founder: info.founder.toBase58(),
-            userId: currentUser.userId,
-            walletAddress: currentUser.address,
-            isFounder
-          });
-          return isFounder;
-        } else {
-          console.error('Current user not found in database');
-          return false;
-        }
-      } catch (e) {
-        console.error('Error fetching user data:', e);
-        return false;
-      }
-
-    } catch (e) {
+    } catch (e: any) {
       console.error('Access check failed:', e);
-      const address = pathname.replace("/escrow/myescrow/", "");
-      router.push(`/escrow/${address}`);
+      console.error('Error details:', e.stack);
       return false;
     }
   };
