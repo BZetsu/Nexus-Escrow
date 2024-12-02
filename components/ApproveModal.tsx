@@ -10,6 +10,7 @@ export default function ApproveModal({
   messageTitle,
   messageDescription,
   children,
+  showUSDC,
 }: ApproveModalType) {
   return (
     <Card width="sm">
@@ -27,7 +28,9 @@ export default function ApproveModal({
 
         <div className="text-center col-span-1">
           <div className="text-xs text-textColor">Amount</div>
-          <div className="text-2xl font-semibold text-black">{amount}</div>
+          <div className="text-2xl font-semibold text-black">
+            {amount}{showUSDC ? ' USDC' : ''}
+          </div>
         </div>
       </div>
 

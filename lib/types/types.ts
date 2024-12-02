@@ -63,6 +63,7 @@ export interface ApproveModalType {
   contractor?: string;
   amount?: number;
   messageTitle: string;
-  messageDescription?: any;
-  children?: any;
+  messageDescription: string | React.ReactNode;
+  children: React.ReactNode;
+  showUSDC?: boolean;
 }

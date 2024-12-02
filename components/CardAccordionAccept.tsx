@@ -8,7 +8,7 @@ import {
   useWallet,
 } from "@solana/wallet-adapter-react";
 import { motion } from "framer-motion";
-import React from "react";
+import React, { useState } from "react";
 import { FaLock, FaUnlock } from "react-icons/fa6";
 import Card from "./Card";
 import CardAnimation from "./CardAnimation";
@@ -17,6 +17,7 @@ import { founderOpenDispute } from "@/lib/NexusProgram/escrow/CopenDipute";
 import { ClientTerminat } from "@/lib/NexusProgram/escrow/CTerminate";
 import { RequestNewSubmition } from "@/lib/NexusProgram/escrow/RequestNewSubmition";
 import { links } from "@/app/layout";
+import ApproveModal from "./ApproveModal";
 
 // Add Discord link constant at the top
 const DISCORD_LINK = "https://discord.gg/VmgUWefjsZ";
@@ -34,15 +35,23 @@ export default function CardAccordionAccept({
   openDispute,
   closeReject,
   font_size = "text-base",
-  escrowDateInfo
+  escrowDateInfo,
+  refreshData,
 }: any) {
   const anchorWallet = useAnchorWallet();
   const wallet = useWallet();
   const { connection } = useConnection();
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [showNewSubmissionModal, setShowNewSubmissionModal] = useState(false);
+  const [newDeadline, setNewDeadline] = useState(7); // Default 7 days
+
+  const calculateNewDeadline = (days: number) => {
+    return Math.floor(Date.now() / 1000) + (days * 24 * 60 * 60);
+  };
 
   const approveSubmit = async () => {
     try {
-      notify_laoding("Transaction Pending...!");
+      notify_laoding("Approving Submission...!");
       console.log(escrowInfo);
       console.log(data);
       console.log(escrowInfo.escrow.toBase58());
@@ -56,7 +65,7 @@ export default function CardAccordionAccept({
         escrowInfo.freelancerInfo.address
       );
       notify_delete();
-      notify_success("Transaction Success!")
+      notify_success("Submission Approved!")
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");   
@@ -66,7 +75,7 @@ export default function CardAccordionAccept({
 
   const RejectSubmit = async () => {
     try {
-      notify_laoding("Transaction Pending...!");
+      notify_laoding("Rejecting Submission...!");
       const tx = await rejectFreelancerSubmit(
         anchorWallet,
         connection,
@@ -75,7 +84,7 @@ export default function CardAccordionAccept({
         data[0].pubkey
       );
       notify_delete();
-      notify_success("Transaction Success!")
+      notify_success("Submission Rejected!")
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");   
@@ -85,7 +94,7 @@ export default function CardAccordionAccept({
 
   const Terminate = async () => {
     try {
-      notify_laoding("Transaction Pending...!");
+      notify_laoding("Terminating Contract...!");
       const tx = await ClientTerminat(
         anchorWallet,
         connection,
@@ -102,8 +111,9 @@ export default function CardAccordionAccept({
     }
   };
 
-  const OpenDispute = async () => {
+  const handleOpenDispute = async () => {
     try {
+      setShowDisputeModal(false);
       notify_laoding("Transaction Pending...!");
       const tx = await founderOpenDispute(
         anchorWallet,
@@ -114,7 +124,7 @@ export default function CardAccordionAccept({
       );
       notify_delete();
       notify_success("Transaction Success!");
-      // showApprove()
+      if (refreshData) await refreshData();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");   
@@ -124,17 +134,20 @@ export default function CardAccordionAccept({
 
   const RequestNewSubmitions = async () => {
     try {
+      setShowNewSubmissionModal(false);
       notify_laoding("Transaction Pending...!");
+      
       const tx = await RequestNewSubmition(
         anchorWallet,
         connection,
         wallet,
         escrowInfo.escrow,
-        data[0].pubkey,
+        data[0].pubkey
       );
+      
       notify_delete();
       notify_success("Transaction Success!");
-      // showApprove()
+      if (refreshData) await refreshData();
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");   
@@ -145,15 +158,14 @@ export default function CardAccordionAccept({
   console.log({ data });
   return (
     <div>
-      <Card className="rounded-b-none border-b-2 !py-4 !pb-2">
+      <Card className="rounded-b-none border-b-2">
         <Stack
           flexDirection="row"
           justifyContent="space-between"
           alignItems="center"
+          className="!py-0 flex items-center !px-3 h-4"
         >
-          <div
-            className={`${font_size} sm:text-lg font-myanmar text-[#9c9595] font-semibold`}
-          >
+          <div className={`${font_size} sm:text-base font-myanmar text-[#9c9595] font-semibold`}>
             {title}
           </div>
           <Stack flexDirection="row" gap={1}>
@@ -162,7 +174,7 @@ export default function CardAccordionAccept({
         </Stack>
       </Card>
       <Card className="rounded-t-none min-h-24 w-[98%] mx-auto !px-0 h-[360px]">
-        <Stack spacing={2} className="h-[130px] escrow overflow-y-scroll px-5">
+        <Stack spacing={2} className="escrow overflow-y-scroll px-5">
           {data.map((el: any, i: number) => (
             <CardAppAccept
               key={i} 
@@ -283,14 +295,14 @@ export default function CardAccordionAccept({
             <CardAnimation className="grid grid-cols-2 mt-3 gap-2">
               <Button
                 variant="contained"
-                onClick={() => OpenDispute()}
+                onClick={() => setShowDisputeModal(true)}
                 className="!normal-case !text-xs !py-3 !bg-red-700 !text-white !col-span-1 !rounded-md"
               >
                 Dispute and Request Refund
               </Button>
               <Button
                 variant="contained"
-                onClick={() => RequestNewSubmitions()}
+                onClick={() => setShowNewSubmissionModal(true)}
                 className="!normal-case !text-xs !py-3 !bg-green-500 !text-white !col-span-1 !rounded-md"
               >
                 Request New Submission
@@ -311,6 +323,87 @@ export default function CardAccordionAccept({
           )}
         </div>
       </Card>
+      {showDisputeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <ApproveModal
+            title="Confirmation"
+            messageTitle="Are you sure you want to request dispute?"
+            messageDescription="To prevent abuse, we charge a dispute resolution fees. Please try as much as possible to resolve your issue before opening a dispute"
+            contractor={data[0]?.userName || "Contractor"}
+            client="You"
+            amount={escrowInfo?.amount ? (escrowInfo.amount / 1000_000) : 0}
+          >
+            <div className="flex gap-4">
+              <Button
+                variant="contained"
+                onClick={() => handleOpenDispute()}
+                className="!normal-case !bg-red-600 hover:!bg-red-700"
+              >
+                Confirm Dispute
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => setShowDisputeModal(false)}
+                className="!normal-case !border-gray-400 !text-gray-600"
+              >
+                Cancel
+              </Button>
+            </div>
+          </ApproveModal>
+        </div>
+      )}
+      {showNewSubmissionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <ApproveModal
+            title="Request New Submission"
+            messageTitle="Set New Deadline"
+            messageDescription={
+              <div className="space-y-4">
+                <p>Please select the number of days for the new deadline:</p>
+                <div className="flex justify-center gap-4">
+                  {[3, 7, 14, 30].map((days) => (
+                    <Button
+                      key={days}
+                      variant={newDeadline === days ? "contained" : "outlined"}
+                      onClick={() => setNewDeadline(days)}
+                      className={`!min-w-[60px] ${
+                        newDeadline === days 
+                          ? "!bg-second !text-white" 
+                          : "!border-gray-300"
+                      }`}
+                    >
+                      {days}d
+                    </Button>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  New deadline will be set to {newDeadline} days from now
+                </p>
+              </div>
+            }
+            contractor={data[0]?.userName || "Contractor"}
+            client="You"
+            amount={escrowInfo?.amount ? (escrowInfo.amount / 1000_000) : 0}
+          >
+            <div className="flex gap-4">
+              <Button
+                variant="contained"
+                onClick={() => RequestNewSubmitions()}
+                className="!normal-case !bg-second hover:!bg-second/90"
+              >
+                Confirm New Deadline
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => setShowNewSubmissionModal(false)}
+                className="!normal-case !border-gray-400 !text-gray-600"
+              >
+                Cancel
+              </Button>
+            </div>
+          </ApproveModal>
+        </div>
+      )}
     </div>
   );
 }

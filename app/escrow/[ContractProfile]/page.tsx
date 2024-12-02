@@ -62,6 +62,8 @@ export default function page() {
   const [escrowDateInfo, setEscrowDateInfo] = useState<any>();
   const [founderProfilePic, setFounderProfilePic] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [showDispute, setShowDispute] = useState(false);
+  const [showTerminate, setShowTerminate] = useState(false);
 
   function handleCloseModal() {
     setOpen(false);

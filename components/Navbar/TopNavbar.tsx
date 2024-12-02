@@ -137,6 +137,19 @@ export default function Example() {
   const path = usePathname();
   const [showMenu, setShowMenu] = useState(false);
   const publicKey = useWallet();
+
+  // Add loading state
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // Optimize profile navigation
+  const handleProfileClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isNavigating) return; // Prevent multiple clicks
+    
+    setIsNavigating(true);
+    router.push('/profile');
+  };
+
   return (
     <Disclosure as="nav" className="bg-second">
       {({ open }: DisclosureRenderProps) => (
@@ -305,9 +318,11 @@ export default function Example() {
                           {({ active }) => (
                             <Link
                               href="/profile"
+                              onClick={handleProfileClick}
                               className={classNames(
                                 active ? "bg-gray-100" : "",
-                                "block px-4 py-2 text-sm text-gray-700 mt-2"
+                                "block px-4 py-2 text-sm text-gray-700 mt-2",
+                                isNavigating ? "opacity-50 cursor-not-allowed" : ""
                               )}
                             >
                               My Profile

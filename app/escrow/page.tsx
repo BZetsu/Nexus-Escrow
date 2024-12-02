@@ -200,25 +200,27 @@ export default function Page() {
                 className="text-xs sm:text-sm pt-[0.2rem]"
                 alignItems="flex-start"
               >
-                <div>Public</div>
+                <div className={`transition-colors ${!form.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
+                  Public
+                </div>
                 <div className="mt-[-6px]">
                   <Switch
                     color="warning"
                     checked={form.private}
-                    onChange={(e) =>{
+                    onChange={(e) => {
                       setForm((prevForm) => ({
                         ...prevForm,
                         private: e.target.checked,
                       }))
                       console.log(!e.target.checked);
                       console.log(form);
-                    }
-                    }
+                    }}
                     size="small"
                   />
                 </div>
-
-                <div>Private</div>
+                <div className={`transition-colors ${form.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
+                  Private
+                </div>
               </Stack>
             </Stack>
 

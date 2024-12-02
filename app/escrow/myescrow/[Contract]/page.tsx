@@ -78,6 +78,7 @@ export default function page() {
   const [descriptionError, setDescriptionError] = useState("");
   const [copied, setCopied] = useState(false);
   const [select, setSelect] = useState<any>()
+  const [currentDeadline, setCurrentDeadline] = useState(deadline);
 
   const anchorWallet = useAnchorWallet();
   const { connection } = useConnection();
@@ -457,6 +458,7 @@ export default function page() {
       setShowApproveSubmit(false);
       await getEscrowInfosss();
       await getApplys();
+      window.location.reload();
     } catch (e) {
       notify_delete();
       notify_error("Approval Failed!");   
@@ -573,6 +575,27 @@ export default function page() {
     }
   }, [cachedEscrowInfo]);
 
+  useEffect(() => {
+    if (!escrowInfo) return;
+    
+    // Initial update
+    setCurrentDeadline(timeLeft(escrowInfo.deadline));
+    
+    // Update every second
+    const timer = setInterval(() => {
+      setCurrentDeadline(timeLeft(escrowInfo.deadline));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [escrowInfo]);
+
+  const refreshAccordions = async () => {
+    await Promise.all([
+      getEscrowInfosss(),
+      getApplys()
+    ]);
+  };
+
   if (!anchorWallet || isLoading) {
     return <LoadingState />;
   }
@@ -670,20 +693,20 @@ export default function page() {
                 className="text-sm"
                 alignItems="center"
               >
-                <div>Public</div>
+                <div className={`transition-colors ${!escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
+                  Public
+                </div>
                 <Switch
-                // onClick={() => privates()}
-                checked={escrowDateInfo.private}
-                onChange={(e) =>{
-                  console.log(e.target.checked);
-                  privates(e.target.checked)
-                  // setEscrowDateInfo((prevForm:  any) => ({
-                  //   ...prevForm,
-                  //   private: !e.target.checked,
-                  // }))
-                }}
-                 className="-mt-[6px]" />
-                <div>Private</div>
+                  checked={escrowDateInfo.private}
+                  onChange={(e) => {
+                    console.log(e.target.checked);
+                    privates(e.target.checked)
+                  }}
+                  className="-mt-[6px]"
+                />
+                <div className={`transition-colors ${escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
+                  Private
+                </div>
               </Stack>}
 
               <Stack mt={4} spacing={2}>
@@ -693,7 +716,7 @@ export default function page() {
                     onClick={() => filter()}
                     className="text-lg font-[500] line-clamp-1"
                   >
-                    {deadline}
+                    {currentDeadline}
                   </div>
                   <IconButton onClick={handleOpenModal}>
                     <EditOutlinedIcon className="text-textColor -mt-2  text-base" />
@@ -725,6 +748,7 @@ export default function page() {
                   openDispute={openDispute}
                   cancel={handleCancelProjectTermination}
                   escrowDateInfo={escrowDateInfo}
+                  refreshData={refreshAccordions}
                 >
                   {escrowInfo && escrowInfo.status !== 5 && escrowInfo.status !== 3 && escrowInfo.status !== 6 && escrowInfo.status !== 1 && <Stack flexDirection="row" gap={1}>
                     <Button
@@ -888,6 +912,7 @@ export default function page() {
             title="Confirmation"
             messageTitle="Are you sure you want to approve submission??"
             messageDescription="Money will be released to the contractor and Contract will be Terminated!"
+            showUSDC={true}
           >
             <Button
               onClick={() => approveSubmit()}
@@ -915,6 +940,7 @@ export default function page() {
             title="Confirmation"
             messageTitle="Are you sure you want to reject submission??"
             messageDescription=""
+            showUSDC={true}
           >
             <Button
               onClick={() => RejectSubmit()}
@@ -937,6 +963,7 @@ export default function page() {
             title="Confirmation"
             messageTitle="Are you sure to start the contract??"
             messageDescription="Contract can oly be terminated by both parties mutually agreeing to do so"
+            showUSDC={true}
           >
             <Button
               onClick={() => approve()}

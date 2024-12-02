@@ -59,6 +59,12 @@ const isPastContract = (es: any) => {
   return isPast;
 };
 
+// Update the shouldShowContract helper function at the top level
+const shouldShowContract = (contract: any) => {
+  // Only show contracts with status 0 (Not Started)
+  return contract.status === 0;
+};
+
 export default function page() {
   const [escrows, setEscrows] = useState<any[]>();
   // const [filter, setFilter] = useState<number>
@@ -165,13 +171,14 @@ export default function page() {
   }, [escrows, showPastContracts]);
 
   return (
-    <div>
-      <Card className="pb-10 mt-6 w-full max-w-[1800px] mx-auto px-5 sm:px-8">
+    <div className="w-full flex items-center justify-center">
+      <Card className="pb-10 mt-3 w-[95%] md:w-[90%] lg:w-[85%] max-w-[1500px] px-5 sm:px-8">
         <Stack
           flexDirection="row"
           justifyContent="space-between"
           alignItems="start"
           className="text-textColor text-xs"
+          
         >
           <Stack
             gap={1.8}
@@ -212,24 +219,7 @@ export default function page() {
             showPastContracts ? 
               // Show completed and terminated contracts
               escrows
-                .filter(es => {
-                  // Log each escrow being checked
-                  console.log("Checking escrow for past contracts:", {
-                    name: es.contractName,
-                    status: es.status,
-                    completed: es.completed,
-                    terminated: es.terminated
-                  });
-                  
-                  // Include contracts that are either completed, terminated, or have status 6/7
-                  return (
-                    es.completed === 1 ||
-                    es.terminated === 1 ||
-                    es.status === 6 ||
-                    es.status === 7 ||
-                    es.status === 3
-                  );
-                })
+                .filter(shouldShowContract)  // Apply our new filter
                 .map((el, i) => {
                   // Determine status text
                   const status = 
@@ -254,7 +244,7 @@ export default function page() {
             : openContracts ?
               // Show only active contracts (not disputes, completed, or terminated)
               escrows
-                .filter((es) => es.status < 5 && es.status !== 3)  // Exclude completed (3)
+                .filter((es) => es.status < 5 && es.status !== 3)  // Keep all active contracts including status 1 (Contract Started)
                 .map((el, i) => (
                   <CardContract
                     key={i}

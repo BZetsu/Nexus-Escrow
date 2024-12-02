@@ -8,7 +8,7 @@ import { submit } from "@/lib/NexusProgram/escrow/submit";
 import { getEscrowInfo } from "@/lib/NexusProgram/escrow/utils.ts/getEscrowInfo";
 import { get_userr_info } from "@/lib/NexusProgram/escrow/utils.ts/get_userr_info";
 import coin from "@/public/coin.svg";
-import dragon from "@/public/dragon.svg";
+import dragon from "@/public/Image.jpg";
 import XIcon from "@mui/icons-material/X";
 import { Button, Container, Modal, Stack } from "@mui/material";
 import { web3 } from "@project-serum/anchor";
@@ -27,6 +27,7 @@ import { get_apply_info } from "@/lib/NexusProgram/escrow/utils.ts/get_apply_inf
 import { timeLeft } from "@/lib/utils/time_formatter";
 import { backendApi } from "@/lib/utils/api.util";
 import ApproveModal from "@/components/ApproveModal";
+import { IoMdClose } from "react-icons/io";
 
 interface EscrowData {
   data: Array<{
@@ -121,7 +122,7 @@ export default function page() {
 
   const submission = async () => {
     try {
-      notify_laoding("Transaction Pending")
+      notify_laoding("Making Submission...")
       const address = pathname.replace("/escrow/ongoing/", "");
       const escrow = new web3.PublicKey(address);
       console.log(material)
@@ -129,7 +130,7 @@ export default function page() {
       // setShowSubmission(true);
       console.log(tx);
       notify_delete();
-      notify_success("Transaction Success!")
+      notify_success("Submitted Successfully!")
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");      console.log(e);
@@ -139,7 +140,7 @@ export default function page() {
   const Tarminat = async () => {
     try {
       
-      notify_laoding("Transaction Pending")
+      notify_laoding("Terminating Contract...")
       const address = pathname.replace("/escrow/ongoing/", "");
       const escrow = new web3.PublicKey(address);
 
@@ -147,7 +148,7 @@ export default function page() {
       // setShowSubmission(true);
       console.log(tx);
       notify_delete();
-      notify_success("Transaction Success!")
+      notify_success("Contract Terminated Successfully!")
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
@@ -157,7 +158,7 @@ export default function page() {
 
   const Dispute = async () => {
     try {
-      notify_laoding("Transaction Pending...!");
+      notify_laoding("Opening Dispute...")!;
       const address = pathname.replace("/escrow/ongoing/", "");
       const escrow = new web3.PublicKey(address);
 
@@ -165,7 +166,7 @@ export default function page() {
       // setShowSubmission(true);
       console.log(tx);
       notify_delete();
-      notify_success("Transaction Success!")
+      notify_success("Dispute Opened!")
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
@@ -260,7 +261,7 @@ export default function page() {
 
   const cancel_apply = async () => {
     try {
-      notify_laoding("Transaction Pending...!")
+      notify_laoding("Cancelling Application...")
       console.log(pathname);
       const address = pathname.replace("/escrow/ongoing/", "");
       const escrow = new web3.PublicKey(address);
@@ -271,7 +272,7 @@ export default function page() {
         escrow,
       );
       notify_delete();
-      notify_success("Transaction Success!")
+      notify_success("Application Cancelled!")
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
@@ -297,6 +298,25 @@ export default function page() {
     }
   }, [escrow_info]);
 
+  useEffect(() => {
+    if (escrow_info) {
+      console.log("Escrow Info Materials:", {
+        materials: escrow_info.materials,
+        status: escrow_info.status
+      });
+    }
+  }, [escrow_info]);
+
+  useEffect(() => {
+    if (escrow_info) {
+      console.log("Debug Materials:", {
+        escrow_info_materials: escrow_info.materials,
+        escrow_info_data_materials: escrow_info_data?.materials,
+        status: escrow_info.status,
+        full_escrow: escrow_info
+      });
+    }
+  }, [escrow_info, escrow_info_data]);
 
   const links = (link: string) => {
     window.open(link, "_blank");
@@ -309,6 +329,8 @@ export default function page() {
     // ... rest of status checks
   };
 
+  const [showDescription, setShowDescription] = useState(false);
+
   return (
     <div>
       <div className="max-w-5xl mx-auto mb-28">
@@ -320,7 +342,7 @@ export default function page() {
               alignItems="center"
               className="text-base sm:text-xl font-[600] h-12"
             >
-              {escrow_info && <div className="flex-1 font-myanmar_khyay ">
+              {escrow_info && <div className="flex-1 font-myanmar_khyay">
                 {escrow_info.contractName}
               </div>}
 
@@ -333,42 +355,39 @@ export default function page() {
             </Stack>
           </Card>
 
-          {escrow_info && deadline && <Card className="!py-4 !px-4 col-span-1 sm:max-w-72 grid place-items-center">
-            <Stack
-              flexDirection="row"
-              justifyContent="space-between"
-              alignItems="center"
-              gap={2}
-            >
-              <div className="text-sm font-[500] font-myanmar">{escrow_info.private ? "Private" : "Public"}</div>
-              <div className="flex flex-col space-y-2">
-                <div className="text-xs text-textColor font-myanmar">
-                  Deadline
+     {escrow_info && deadline && <Card className="!py-4 !px-4 col-span-1 sm:max-w-72 grid place-items-center">
+              <Stack
+                flexDirection="row"
+                justifyContent="space-between"
+                alignItems="right"
+                gap={2}
+              >
+                <div className="text-sm font-[500] font-myanmar">
+                  {escrow_info.private ? "Private" : "Public"}
                 </div>
-                <div className="text-base font-semibold line-clamp-1 font-myanmar">
-                  {deadline}
+                <div className="flex flex-col space-y-2">
+                  <div className="text-xs text-textColor font-myanmar">
+                    Deadline
+                  </div>
+                  <div className="text-base font-semibold line-clamp-1 font-myanmar">
+                    {deadline}
+                  </div>
                 </div>
-              </div>
-            </Stack>
-          </Card>}
+              </Stack>
+            </Card>
+          }
         </div>
 
-        <div className="grid sm:grid-cols-5 gap-4 mt-5">
-          <Card className="!p-0 sm:col-span-2 overflow-hidden h-full 
-            max-w-[300px] sm:max-w-none 
-            mx-auto w-[95%] 
-            [@media(min-width:500px)]:w-[400px] 
-            sm:w-full"
-          >
+        <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mt-4 px-0">
+          <Card className="!p-0 col-span-1 sm:col-span-2 overflow-hidden h-[450px] w-full">
             <div className="p-2">
               <Image
                 src={escrow_info?.founderInfo?.image || dragon.src}
                 alt={escrow_info?.founderInfo?.name || "Profile"}
                 width={500}
                 height={500}
-                className="w-full h-[180px] [@media(min-width:500px)]:h-[200px] sm:h-[250px] rounded-xl object-cover object-center"
+                className="w-full h-[180px] [@media(min-width:500px)]:h-[200px] sm:h-[250px] rounded-xl object-cover object-center mt-1"
                 onError={(e) => {
-                  console.log("Image load error, falling back to dragon.svg");
                   const target = e.target as HTMLImageElement;
                   target.src = dragon.src;
                 }}
@@ -382,185 +401,168 @@ export default function page() {
                 alignItems="center"
                 className="w-full py-1"
               >
-                <div className="border border-gray-200 rounded-xl px-6 py-3 flex flex-col w-full min-h-[4rem]">
-                  <span className="text-xs text-gray-500 mb-1">Contract Creator</span>
+                <div className="border border-gray-200 rounded-xl px-3 sm:px-6 py-2 sm:py-3 flex flex-col w-full min-h-[4rem]">
+                  <span className="text-[10px] sm:text-xs text-gray-500 mb-1">Contract Creator</span>
                   <div className="flex items-center justify-between">
-                    <div className="text-2xl sm:text-3xl font-[600] font-myanmarButton">
+                    <div className="text-lg sm:text-xl md:text-2xl font-[600] font-myanmarButton">
                       {escrow_info?.founderInfo?.name || "--"}
                     </div>
                     <span
                       onClick={() => links(escrow_info?.founderInfo?.twitter)}
                       className="flex items-center cursor-pointer hover:text-blue-500 transition-colors duration-200"
                     >
-                      <XIcon className="text-3xl" />
-                      <div className="text-[10px] text-gray-500 ml-1">
+                      <XIcon className="text-xl sm:text-3xl" />
+                      <div className="text-[8px] sm:text-[10px] text-gray-500 ml-1">
                         (Verified)
                       </div>
                     </span>
                   </div>
                 </div>
               </Stack>
+
+              <div className="flex flex-col gap-3 mt-4">
+                <Button
+                  onClick={() => links(escrow_info?.telegramLink)}
+                  variant="contained"
+                  className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-second w-full"
+                >
+                  Start Chat
+                </Button>
+
+                <Button
+                  onClick={() => links(escrow_info?.materials)}
+                  variant="contained"
+                  className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-white !text-second !border !border-gray-200 w-full font-myanmar_khyay flex items-center justify-center gap-2"
+                >
+                  <CiFileOn className="text-xl -mt-[2px]" />
+                  Link to Resources
+                </Button>
+              </div>
             </Stack>
           </Card>
 
-          <div className="sm:col-span-3">
-            <Card width="lg" className="h-fit">
-              <div className="text-sm text-textColor mb-3">Description</div>
-              <div className="text-[13px] leading-7 text-gray-700">
-                {escrow_info?.description || escrow_info_data?.description ? (
-                  <div>{escrow_info_data?.description || escrow_info?.description}</div>
-                ) : (
-                  <div className="text-gray-500">No description available</div>
-                )}
-              </div>
-            </Card>
-            {/* {escrow_info && (
-              <span onClick={() => links(escrow_info.materials)}>
-                <Card className="mt-4 text-sm py-4">Link to materials</Card>
-              </span>
-            )} */}
-            <Card className="mt-2 !pt-2 !h-64">
-              {escrow_info && escrow_info.status === 9 && (
-                
-                <Card className="mt-4 !py-3">
-                  <Card className="text-xs text-center !shadow-none !border !border-textColor">
-                        Your submission has been sent, Wait until the Client Approve it within the next 14 days otherwise the funds will be released to you
-                      {/* Your submission was approved and pay has been made to your
-                  wallet, project will auto terminate in 24 hours */}
-                    </Card>
-                  {/* <Stack
-                    flexDirection="row"
-                    alignItems="center"
-                    justifyContent="space-between"
-                  >
-                    <div className="text-sm text-textColor">Submission</div>
-                    <Button
-                      variant="contained"
-                      disabled={false}
-                      className="!text-xs !bg-second !px-4 !py-2 !rounded-md !font-semibold !normal-case !text-white"
-                      onClick={() => submission()}
+          <div className="col-span-1 sm:col-span-3 w-full">
+            <div className="space-y-4 w-full">
+              <Card width="lg" className="h-fit min-h-[250px] w-full">
+                <div className="text-sm text-textColor mb-3">Description</div>
+                <div 
+                  className="text-[13px] leading-7 text-gray-700 cursor-pointer"
+                  onClick={() => setShowDescription(true)}
+                >
+                  {escrow_info?.description || escrow_info_data?.description ? (
+                    <div>{escrow_info_data?.description || escrow_info?.description}</div>
+                  ) : (
+                    <div className="text-gray-500">No description available</div>
+                  )}
+                </div>
+              </Card>
+              {/* {escrow_info && (
+                <span onClick={() => links(escrow_info.materials)}>
+                  <Card className="mt-4 text-sm py-4">Link to materials</Card>
+                </span>
+              )} */}
+              <Card className="!pt-2 !h-48 w-full">
+                {escrow_info && escrow_info.status === 9 && (
+                  <div className="flex gap-2 mt-4">
+                    <div 
+                      onClick={() => links(escrow_info.materials)}
+                      className="w-fit cursor-pointer"
                     >
-                      Submit
-                    </Button>
-                  </Stack> */}
-                </Card>
-              )}
-
-              {escrow_info && applyInfo && escrow_info.status === 3 &&
-                <div className="flex gap-2 mt-4">
-                  <div 
-                    onClick={() => links(escrow_info?.materials)}
-                    className="w-fit cursor-pointer"
-                  >
-                    <Card className="!py-2 !px-2 grid place-content-center hover:scale-105 transition-transform duration-200">
-                      <CiFileOn className="text-6xl mx-auto" />
-                      <div className="text-xs mt-1">
-                        Link to Resources
-                      </div>
-                    </Card>
-                  </div>
-                  <div className="w-full">
-                    <Card className="text-xs text-center !shadow-none !border !border-textColor">
-                    Your submission was approved and pay has been made to your wallet
-                      {/* Your submission was approved and pay has been made to your
-                  wallet, project will auto terminate in 24 hours */}
-                    </Card>
-                  </div>
-                </div>}
-              {escrow_info && applyInfo && (
-                <div className="flex gap-2 mt-4 px-4 pb-4">
-                  <Card className="!w-fit !py-2 text-center !px-2 grid place-content-center">
-                    <CiFileOn className="text-6xl mx-auto" />
-                    {escrow_info?.materials && (
-                      <div
-                        className="text-xs mt-1 hover:scale-105 transition-transform duration-200 cursor-pointer"
-                        onClick={() => links(escrow_info.materials)}
-                      >
-                        Link to Resources
-                      </div>
-                    )}
-                  </Card>
-                  <div className="w-full flex flex-col">
-                    <Card className="!shadow-none !border !border-gray-300 !bg-transparent flex items-center justify-center h-[108px] mb-6">
-                      <div className="text-sm text-gray-600 text-center">
-                        Your Application has been sent
-                      </div>
-                    </Card>
-                    <div className="flex justify-center gap-4">
-                      <Button
-                        variant="contained"
-                        className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-second"
-                        onClick={() => cancel_apply()}
-                      >
-                        Cancel Application
-                      </Button>
+                      <Card className="!py-2 !px-2 grid place-content-center hover:scale-105 transition-transform duration-200">
+                        <CiFileOn className="text-6xl mx-auto" />
+                        <div className="text-xs mt-1">
+                          Link to Resources
+                        </div>
+                      </Card>
+                    </div>
+                    <div className="w-full">
+                      <Card className="text-xs text-center !shadow-none !border !border-textColor">
+                        Your submission has been sent, Wait until the Client Approve it within the next 14 days otherwise the funds will be released to you
+                      </Card>
                     </div>
                   </div>
-                </div>
-              )}
-              {escrow_info && applyInfo && escrow_info.status === 2 &&
-                <div className="flex gap-2 mt-4">
-                  <Card className="!w-fit !py-2 text-center !px-2 grid place-content-center">
-                    <CiFileOn className="text-6xl mx-auto" />
-                    {escrow_info && (
-                      <div
-                        className="text-xs mt-1 hover:scale-105 transition-transform duration-200 cursor-pointer"
-                        onClick={() => links(escrow_info?.materials)}
-                      >
-                        Link to Resources
-                      </div>
-                    )}
-                  </Card>
-                  <div className="w-full">
-                    <Card className="text-xs text-center !shadow-none !border !border-textColor">
-                      Contract has started please make submission before the
-                      deadline
-                      {/* Your submission was approved and pay has been made to your
-                  wallet, project will auto terminate in 24 hours */}
-                    </Card>
-                    <Card className="mt-2 !py-3">
-                      <Stack
-                        flexDirection="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                      >
-                        <div className="text-sm text-textColor">
-                          <input
-                            onChange={(e) => setMaterial(e.target.value)}
-                            placeholder="Submission"
-                            className="h-6 border-0 focus:outline-none"
-                          />
+                )}
+
+                {escrow_info && applyInfo && escrow_info.status === 3 &&
+                  <div className="flex gap-2 mt-4">
+                    <div 
+                      onClick={() => links(escrow_info?.materials)}
+                      className="w-fit cursor-pointer"
+                    >
+                      <Card className="!py-2 !px-2 grid place-content-center hover:scale-105 transition-transform duration-200">
+                        <CiFileOn className="text-6xl mx-auto" />
+                        <div className="text-xs mt-1">
+                          Link to Resources
                         </div>
+                      </Card>
+                    </div>
+                    <div className="w-full">
+                      <Card className="text-xs text-center !shadow-none !border !border-textColor">
+                      Your submission was approved and pay has been made to your wallet
+                        {/* Your submission was approved and pay has been made to your
+                  wallet, project will auto terminate in 24 hours */}
+                      </Card>
+                    </div>
+                  </div>}
+                {escrow_info && applyInfo && !escrow_info.reciever && (
+                  <div className="flex gap-2 mt-4 px-4 pb-4">
+                    <div className="w-full flex flex-col">
+                      <Card className="!shadow-none !border !border-gray-300 !bg-transparent flex items-center justify-center h-[80px] mb-4">
+                        <div className="text-sm text-gray-600 text-center">
+                          Your Application has been sent
+                        </div>
+                      </Card>
+                      <div className="flex justify-center gap-4">
                         <Button
                           variant="contained"
-                          className="!text-xs !bg-second !px-4 !pb-2 !pt-3 !rounded-md !font-semibold !normal-case !text-white"
-                          onClick={() => submission()}
+                          className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-second"
+                          onClick={() => cancel_apply()}
                         >
-                          Submit
+                          Cancel Application
                         </Button>
-                      </Stack>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {escrow_info && applyInfo && escrow_info.status === 2 && (
+                  <div className="flex flex-col gap-2 mt-4">
+                    <div className="w-full">
+                      <Card className="text-xs text-center !shadow-none !border !border-textColor">
+                        Contract has started please make submission before the deadline
+                      </Card>
+                      <Card className="mt-2 !py-3">
+                        <Stack
+                          flexDirection="row"
+                          alignItems="center"
+                          justifyContent="space-between"
+                        >
+                          <div className="text-sm text-textColor">
+                            <input
+                              onChange={(e) => setMaterial(e.target.value)}
+                              placeholder="Submission"
+                              className="h-6 border-0 focus:outline-none"
+                            />
+                          </div>
+                          <Button
+                            variant="contained"
+                            className="!text-xs !bg-second !px-4 !pb-2 !pt-3 !rounded-md !font-semibold !normal-case !text-white"
+                            onClick={() => submission()}
+                          >
+                            Submit
+                          </Button>
+                        </Stack>
+                      </Card>
+                    </div>
+                  </div>
+                )}
+                {escrow_info && applyInfo && escrow_info.status == 5 && (
+                  <div>
+                    <Card className="text-xs text-center !shadow-none !border !border-textColor">
+                      Dispute Mode Now!
                     </Card>
                   </div>
-                </div>}
-              {escrow_info && applyInfo && escrow_info.status == 5 &&
-                <div>
-                  <Card className="text-xs text-center !shadow-none !border !border-textColor">
-                    Dispute Mode Now!
-                  </Card>
-                </div>
-              }
-              {escrow_info && escrow_info.status === 4 && (
-                <motion.div
-                  initial={{ y: -10, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{
-                    duration: 0.8,
-                    ease: "easeInOut",
-                    type: "spring",
-                    stiffness: 500,
-                  }}
-                  className="px-4 mt-4"
-                >
+                )}
+                {escrow_info && escrow_info.status === 4 && (
                   <motion.div
                     initial={{ y: -10, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -570,24 +572,25 @@ export default function page() {
                       type: "spring",
                       stiffness: 500,
                     }}
-                    className="px-4 mt-4"
+                    className="px-4 mt-4 flex flex-col h-full justify-between"
                   >
-                    <Card className="text-xs text-center !shadow-none !border !border-textColor">
-                      Your Submition was rejected you can either Terminate or
-                      Dispute
-                      {/* Your submission was approved and pay has been made to your
-                  wallet, project will auto terminate in 24 hours */}
+                    <Card className="text-xs text-center !shadow-none !border !border-textColor h-[100px] flex items-center justify-center pb-4">
+                      <div className="px-4 translate-y-4">
+                        Your Submission was rejected you can either Terminate or Dispute
+                      </div>
                     </Card>
+                    
                     <Stack
                       flexDirection="row"
-                      mt={4}
+                      mt={0}
                       justifyContent="center"
                       alignItems="center"
                       gap={2}
+                      className="pb-2 px-8"
                     >
                       <Button
                         variant="contained"
-                        className="!text-xs sm:!text-sm !bg-second !px-4 !py-2 !rounded-md !normal-case !text-white !w-56"
+                        className="!text-xs sm:!text-sm !bg-second !px-4 !py-2 !rounded-md !normal-case !text-white !w-56 hover:!bg-second/90"
                         onClick={() => handleShowDispute()}
                       >
                         Dispute
@@ -595,40 +598,58 @@ export default function page() {
 
                       <Button
                         variant="contained"
-                        className="!text-xs sm:!text-sm !shadow-lg !px-4 !py-2 !rounded-md !bg-white !normal-case !text-second !w-56"
+                        className="!text-xs sm:!text-sm !shadow-lg !px-4 !py-2 !rounded-md !bg-white !normal-case !text-second !w-56 !border !border-gray-200 hover:!bg-gray-50"
                         onClick={() => Tarminat()}
                       >
                         Terminate
                       </Button>
                     </Stack>
                   </motion.div>
-                </motion.div>
-                
-
-              )}
-              </Card>
-            {escrow_info && <Modal
-              open={showDispute}
-              onClose={() => setShowDispute(false)}
-              className="grid place-items-center"
-            >
-              <ApproveModal
-                client={applyInfo?.userName || "User"}
-                contractor={escrow_info?.founderInfo?.name || "Contractor"}
-                amount={Number(escrow_info?.amount || 0) / 1000_000}
-                title="Confirmation"
-                messageTitle="Are you sure you want to request dispute??"
-                messageDescription="To prevent abuse, we charge a dispute resolution fees. Please try as much as possible ro resolve your issue before opening a dispute"
+                )}
+                </Card>
+              {escrow_info && <Modal
+                open={showDispute}
+                onClose={() => setShowDispute(false)}
+                className="grid place-items-center"
               >
-                <Button
-                  onClick={() => Dispute()}
-                  variant="contained"
-                  className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-2"
+                <ApproveModal
+                  client={applyInfo?.userName || "User"}
+                  contractor={escrow_info?.founderInfo?.name || "Contractor"}
+                  amount={Number(escrow_info?.amount || 0) / 1000_000}
+                  title="Confirmation"
+                  messageTitle="Are you sure you want to request dispute??"
+                  messageDescription="To prevent abuse, we charge a dispute resolution fees. Please try as much as possible ro resolve your issue before opening a dispute"
                 >
-                  Dispute
-                </Button>
-              </ApproveModal>
-            </Modal>}
+                  <Button
+                    onClick={() => Dispute()}
+                    variant="contained"
+                    className="!normal-case !text-black !text-sm !bg-green-500 !px-8 !py-2"
+                  >
+                    Dispute
+                  </Button>
+                </ApproveModal>
+              </Modal>}
+              <Modal
+                open={showDescription}
+                onClose={() => setShowDescription(false)}
+                className="grid place-items-center"
+              >
+                <Card width="md" className="max-h-screen overflow-y-hidden relative">
+                  <div
+                    className="absolute top-5 right-5 cursor-pointer"
+                    onClick={() => setShowDescription(false)}
+                  >
+                    <IoMdClose className="text-2xl" />
+                  </div>
+
+                  <div className="text-base font-[500]">Description</div>
+
+                  <p className="mt-5 p-2 text-sm leading-7">
+                    {escrow_info_data?.description || escrow_info?.description}
+                  </p>
+                </Card>
+              </Modal>
+            </div>
           </div>
         </div>
       </div>

@@ -18,18 +18,21 @@ export function formatTime(epochTime: number): string {
 }
 
 export const timeLeft = (deadline: number) => {
-  const now = Math.floor(Date.now() / 1000); // Convert current time to seconds
-  const time_left = deadline - now; // Calculate time left in seconds
+  const now = Math.floor(Date.now() / 1000);
+  const remaining = deadline - now;
 
-  const dateObject = new Date(deadline * 1000);
-  console.log(dateObject)
-  const year = dateObject.getFullYear();
-  const month = String(dateObject.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
-  const day = String(dateObject.getDate()).padStart(2, "0");
+  if (remaining <= 0) return "Expired";
 
-  const formattedDate = `${year}-${month}-${day}`;
+  const days = Math.floor(remaining / 86400);
+  const hours = Math.floor((remaining % 86400) / 3600);
+  const minutes = Math.floor((remaining % 3600) / 60);
+  const seconds = Math.floor(remaining % 60);
 
-  const timeLeftFormatted =
-    time_left > 0 ? formatTime(time_left * 1000) : formattedDate;
-  return timeLeftFormatted;
+  let timeString = "";
+  if (days > 0) timeString += `${days}d `;
+  if (hours > 0 || days > 0) timeString += `${hours}h `;
+  if (minutes > 0 || hours > 0 || days > 0) timeString += `${minutes}m `;
+  timeString += `${seconds}s`;
+
+  return timeString;
 };
