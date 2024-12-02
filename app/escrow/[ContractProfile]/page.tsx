@@ -12,7 +12,7 @@ import { inputStyle } from "@/lib/styles/styles";
 import { backendApi } from "@/lib/utils/api.util";
 import { formatTime, timeLeft } from "@/lib/utils/time_formatter";
 import coin from "@/public/coin.svg";
-import dragon from "@/public/dragon.svg";
+import dragon from "@/public/Image.jpg";
 import XIcon from "@mui/icons-material/X";
 import { Button, Container, Modal, Stack } from "@mui/material";
 import { web3 } from "@project-serum/anchor";
@@ -64,6 +64,7 @@ export default function page() {
   const [isLoading, setIsLoading] = useState(true);
   const [showDispute, setShowDispute] = useState(false);
   const [showTerminate, setShowTerminate] = useState(false);
+  const [countdown, setCountdown] = useState("");
 
   function handleCloseModal() {
     setOpen(false);
@@ -259,6 +260,20 @@ export default function page() {
     getApply();
   }, [anchorWallet]);
 
+  useEffect(() => {
+    if (escrowInfo && escrowInfo.deadline) {
+      // Initial update
+      setCountdown(timeLeft(escrowInfo.deadline));
+      
+      // Update every second
+      const timer = setInterval(() => {
+        setCountdown(timeLeft(escrowInfo.deadline));
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [escrowInfo]);
+
   const router = useRouter();
 
   const links = (link: string) => {
@@ -288,7 +303,7 @@ export default function page() {
               alignItems="center"
               className="text-base sm:text-xl font-[600] pt-2"
             >
-              <div className="flex-1 text-base sm:text-2xl">
+              <div className="flex-1 text-base sm:text-3xl font-bold">
                 {escrowInfo && escrowInfo.contractName !== "" ? (
                   <span className="text-black">
                     {escrowInfo.contractName}
@@ -307,20 +322,28 @@ export default function page() {
             </Stack>
           </Card>
 
-          <Card className="!py-3 !px-4 col-span-1 sm:max-w-72 grid place-items-center">
+          <Card className="!py-3 !px-4 col-span-1 sm:max-w-72">
             <Stack
               flexDirection="row"
               justifyContent="space-between"
               alignItems="center"
+              className="h-full min-h-[80px]"
               gap={2}
             >
-              <div className="text-sm font-[500]">{escrowDateInfo && escrowDateInfo.private ? "Private" : "Public"}</div>
+              <div className="text-sm font-[500] flex items-center gap-2 translate-y-2">
+                <div className={`transition-colors ${
+                  !escrowDateInfo?.private ? 'text-black font-semibold' : 'text-gray-500'
+                }`}>
+                  {escrowDateInfo?.private ? "Private" : "Public"}
+                </div>
+                <div className={`w-2 h-2 rounded-full ${
+                  escrowDateInfo?.private ? 'bg-red-500' : 'bg-green-500'
+                } -mt-0.7`} />
+              </div>
               <div className="flex flex-col space-y-2">
                 <div className="text-xs text-textColor">Deadline</div>
                 <div className="text-base font-semibold line-clamp-1">
-                  {escrowInfo && escrowInfo.deadline
-                    ? timeLeft(escrowInfo.deadline)
-                    : "2d 24hrs 30min"}
+                  {countdown}
                 </div>
               </div>
             </Stack>
@@ -328,84 +351,65 @@ export default function page() {
         </div>
 
         <div className="grid sm:grid-cols-5 gap-4 mt-5">
-          <Card className="!p-0 sm:col-span-2 overflow-hidden h-[550px]">
-            <div className="flex sm:flex-col p-2 h-full">
+          <Card className="!p-0 sm:col-span-2 overflow-hidden h-[290px] sm:h-[550px]">
+            <div className="flex flex-col sm:flex-col p-2 sm:p-3 h-full">
               <Image
                 src={founderProfilePic || escrowInfo?.founderInfo?.image || dragon}
                 alt="profile"
                 width={500}
                 height={500}
-                className="w-[100px] h-[100px] p-1 sm:p-0 sm:w-full sm:h-[350px] rounded-xl object-cover object-center"
+                className="w-[700px] h-[160px] sm:w-full sm:h-[350px] 
+                           rounded-xl object-cover 
+                           px-2 sm:px-0
+                           object-[center_75%] sm:object-center"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = dragon.src;
                 }}
               />
 
-              <Stack pt={2} spacing={2} px={1} className="flex-1 flex flex-col">
-                <Stack
-                  flexDirection="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  className="w-full py-1"
-                >
-                  <div className="border border-gray-200 rounded-xl px-6 py-3 flex items-center justify-between w-full min-h-[4rem]">
-                    <div className="text-xl sm:text-3xl font-[600] font-myanmarButton flex items-center mt-2">
-                      {escrowInfo ? escrowInfo.founderInfo.name : "--"}
-                    </div>
-                    <div className="hidden sm:flex items-center gap-3">
-                      <span
-                        onClick={() => links(escrowInfo.founderInfo.twitter)}
-                        className="flex items-center cursor-pointer hover:text-blue-400 transition-colors duration-200"
-                      >
-                        <XIcon className="text-2xl" />
-                      </span>
-                      <div className="text-[10px] text-gray-500 flex items-center">
-                        (Not Verified)
-                      </div>
-                    </div>
+              <div className="mt-2 px-1">
+                <div className="border border-gray-200 rounded-xl px-4 py-2 flex items-center justify-between w-full">
+                  <div className="text-lg sm:text-3xl font-[600] font-myanmarButton">
+                    {escrowInfo ? escrowInfo.founderInfo.name : "--"}
                   </div>
-                </Stack>
-
-                <div className="flex flex-col gap-4 justify-end h-[100px]">
-                  <div className="flex gap-4 items-center justify-center pb-4 mb-6">
-                    <Button
-                      onClick={() => {
-                        if (escrowInfo && escrowDateInfo) {
-                          console.log("Database Escrow Info:", escrowDateInfo);
-                          const telegramLink = escrowDateInfo.telegramLink;
-                          if (telegramLink) {
-                            let link = telegramLink;
-                            // Check if it's a username only
-                            if (!link.includes('.') && !link.startsWith('@') && !link.includes('t.me')) {
-                              link = `https://t.me/${link}`;
-                            }
-                            // Add https if needed
-                            else if (!link.startsWith('http://') && !link.startsWith('https://')) {
-                              link = `https://${link}`;
-                            }
-                            console.log("Opening telegram link:", link);
-                            window.open(link, '_blank');
-                          } else {
-                            console.log("No telegram link found in database info:", escrowDateInfo);
-                          }
-                        }
-                      }}
-                      variant="contained"
-                      className="!text-[10px] sm:!text-sm !px-12 !font-semibold !pt-3 !capitalize !bg-second !w-fit !pb-[.8rem] !py-3"
-                    >
-                      Start Chat
-                    </Button>
-
+                  <div className="flex items-center gap-2">
                     <span
                       onClick={() => links(escrowInfo.founderInfo.twitter)}
-                      className="sm:hidden"
+                      className="cursor-pointer hover:text-blue-400 transition-colors duration-200"
                     >
-                      <XIcon className="text-sm" />
+                      <XIcon className="text-xl" />
                     </span>
+                    <div className="text-[10px] text-gray-500">
+                      (Not Verified)
+                    </div>
                   </div>
                 </div>
-              </Stack>
+
+                <div className="flex justify-center mt-2 px-2">
+                  <Button
+                    onClick={() => {
+                      if (escrowInfo && escrowDateInfo) {
+                        const telegramLink = escrowDateInfo.telegramLink;
+                        if (telegramLink) {
+                          let link = telegramLink;
+                          if (!link.includes('.') && !link.startsWith('@') && !link.includes('t.me')) {
+                            link = `https://t.me/${link}`;
+                          }
+                          else if (!link.startsWith('http://') && !link.startsWith('https://')) {
+                            link = `https://${link}`;
+                          }
+                          window.open(link, '_blank');
+                        }
+                      }
+                    }}
+                    variant="contained"
+                    className="!text-[10px] sm:!text-sm !font-semibold !capitalize !bg-second !py-2 w-full sm:w-fit sm:!px-12"
+                  >
+                    Start Chat
+                  </Button>
+                </div>
+              </div>
             </div>
           </Card>
 
