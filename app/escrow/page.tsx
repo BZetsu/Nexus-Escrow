@@ -181,15 +181,24 @@ export default function Page() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Add this helper function to check if contract is expired
+  const isContractExpired = (deadline: number) => {
+    const now = Math.floor(Date.now() / 1000);
+    return deadline < now;
+  };
+
+  // Modify the filteredEscrows to handle private contracts
   const filteredEscrows = escrows.filter(escrow => 
-    escrow.contractName.toLowerCase().includes(searchTerm.toLowerCase())
+    escrow.contractName.toLowerCase().includes(searchTerm.toLowerCase()) && 
+    !isContractExpired(escrow.deadline) &&
+    !escrow.private  // Only show public contracts
   );
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 place-content-center w-full py-10 max-w-7xl mx-auto mb-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 place-content-center w-full py-8 max-w-7xl mx-auto mb-8">
         <form onSubmit={(e) => e.preventDefault()}>
-          <Card className="pb-7">
+          <Card className="pb-6">
             <Stack flexDirection="row" justifyContent="space-between">
               <div className="text-sm sm:text-base text-textColor font-myanmar">
                 Create new escrow contract
@@ -212,8 +221,6 @@ export default function Page() {
                         ...prevForm,
                         private: e.target.checked,
                       }))
-                      console.log(!e.target.checked);
-                      console.log(form);
                     }}
                     size="small"
                   />
@@ -225,18 +232,17 @@ export default function Page() {
             </Stack>
 
             <Stack
-              spacing={2}
+              spacing={3}
               width="100%"
-              mt={5}
+              mt={4}
               className="text-xs sm:text-sm"
             >
-              <div>
-                <label className="font-myanmar">Contract Name</label>
-                <div className="relative">
+              <div className="mb-4">
+                <label className="font-myanmar mb-1 block">Contract Name</label>
+                <div className="relative w-[102%]">
                   <input
                     value={form.ContractName}
                     onChange={(e) => {
-                      // Limit input to 32 characters
                       if (e.target.value.length <= 32) {
                         setForm((prevForm) => ({
                           ...prevForm,
@@ -244,9 +250,9 @@ export default function Page() {
                         }))
                       }
                     }}
-                    className={`${inputStyle} w-full`}
+                    className={`${inputStyle} w-full h-[42px]`}
                     placeholder="E.g., Build a landing page"
-                    maxLength={32}  // Add maxLength property
+                    maxLength={32}
                   />
                   <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${
                     form.ContractName.length >= 28 ? 'text-red-500' : 'text-gray-400'
@@ -257,8 +263,8 @@ export default function Page() {
               </div>
 
               <div className="grid gap-6 grid-cols-4">
-                <div className="col-span-3">
-                  <label className="font-myanmar">Telegram Link</label>
+                <div className="col-span-3 w-[102%]">
+                  <label className="font-myanmar mb-1 block">Telegram Link</label>
                   <input
                     type="text"
                     value={form.TelegramLink}
@@ -268,26 +274,26 @@ export default function Page() {
                         TelegramLink: e.target.value,
                       }))
                     }
-                    className={`${inputStyle} w-full`}
+                    className={`${inputStyle} w-full h-[42px]`}
                     placeholder="E.g., https://example.tme.com"
                   />
                 </div>
 
-                <div className="col-span-1">
-                  <label className="font-myanmar">Deadline</label>
+                <div className="col-span-1 w-[102%]">
+                  <label className="font-myanmar mb-1 block">Deadline</label>
                   <input
                     type="date"
                     value={timeValue}
                     onChange={handleTimeChange}
-                    className={`${inputStyle} w-full`}
+                    className={`${inputStyle} w-full h-[42px]`}
                     placeholder="E.g., 2024-08-15"
                   />
                 </div>
               </div>
 
               <div className="grid gap-6 grid-cols-1 sm:grid-cols-2">
-                <div className="col-span-1">
-                  <label className="font-myanmar">Input USDC amount</label>
+                <div className="col-span-1 w-[102%]">
+                  <label className="font-myanmar mb-1 block">Input USDC amount</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -299,7 +305,7 @@ export default function Page() {
                           Amount: Number(e.target.value),
                         }))
                       }
-                      className={`${inputStyle} w-full`}
+                      className={`${inputStyle} w-full h-[42px]`}
                       placeholder="Input USDC amount"
                     />
                     <div className="absolute right-4 top-[50%] translate-y-[-50%]">
@@ -308,8 +314,8 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="col-span-1">
-                  <label className="font-myanmar">Link to resources</label>
+                <div className="col-span-1 w-[102%]">
+                  <label className="font-myanmar mb-1 block">Link to resources</label>
                   <input
                     type="text"
                     value={form.Link}
@@ -319,14 +325,14 @@ export default function Page() {
                         Link: e.target.value,
                       }))
                     }
-                    className={`${inputStyle} w-full`}
+                    className={`${inputStyle} w-full h-[42px]`}
                     placeholder="E.g., https://example.figma.com"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="font-myanmar">Description</label>
+              <div className="mt-2">
+                <label className="font-myanmar mb-2 block">Description</label>
                 <textarea
                   value={form.Description}
                   onChange={(e) =>
@@ -335,14 +341,14 @@ export default function Page() {
                       Description: e.target.value,
                     }))
                   }
-                  className={`${inputStyle} w-full`}
-                  rows={3}
+                  className={`${inputStyle} w-full min-h-[150px] py-4`}
+                  rows={5}
                   placeholder="E.g., A brief description of what the contract entails"
                 />
               </div>
             </Stack>
 
-            <Stack mt={5} alignItems="center">
+            <Stack mt={3} alignItems="center">
               <Button
                 onClick={handleSubmit}
                 variant="contained"
@@ -356,7 +362,7 @@ export default function Page() {
           </Card>
         </form>
 
-        <Card>
+        <Card className="!pb-6">
           <div className="flex justify-between items-center">
             <div className="text-sm sm:text-base text-textColor font-myanmar">
               Open Public Contracts
@@ -394,10 +400,11 @@ export default function Page() {
             </div>
           </div>
 
-          <Stack mt={3} spacing={2.6} className="h-[472px] overflow-y-scroll overflow-x-hidden escrow pr-2">
+          <Stack mt={3} spacing={2.6} className="h-[450px] overflow-y-scroll overflow-x-hidden escrow pr-2">
             {filteredEscrows.map((el, i) => (
-              (!el.private && el.status !== 6) &&
+              (!el.private && el.status !== 6) &&  // Double check privacy status
               (el.reciever !== null ? el.reciever.toBase58() == anchorWallet?.publicKey.toBase58() : true) &&
+              !isContractExpired(el.deadline) &&
               <Suspense fallback={<Loading />} key={i}>
                 <CardContract
                   contractName={el.contractName}
@@ -407,6 +414,7 @@ export default function Page() {
                   createdAt={el.createdAt}
                   status={el.status || 0}
                   type={2}
+                  isPrivate={el.private}  // Pass privacy status to card
                 />
               </Suspense>
             ))}
