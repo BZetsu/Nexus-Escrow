@@ -331,6 +331,33 @@ export default function page() {
 
   const [showDescription, setShowDescription] = useState(false);
 
+  // Add this effect to handle automatic privacy switch
+  useEffect(() => {
+    const handlePrivacyOnContractStart = async () => {
+      if (escrow_info && escrow_info.status === 2 && !escrow_info?.private) {
+        try {
+          const address = pathname.replace("/escrow/ongoing/", "");
+          await backendApi.patch(`escrow/update/${address}`, {
+            deadline: Number(escrow_info.deadline),
+            telegramLink: escrow_info.telegramLink || "",
+            private: true,
+            description: escrow_info_data?.description || ""
+          });
+          
+          // Update local state
+          setEscrowInfo((prev: any) => ({
+            ...prev,
+            private: true
+          }));
+        } catch (error) {
+          console.error("Failed to update privacy:", error);
+        }
+      }
+    };
+
+    handlePrivacyOnContractStart();
+  }, [escrow_info?.status]);
+
   return (
     <div>
       <div className="max-w-5xl mx-auto mb-28">
@@ -359,11 +386,18 @@ export default function page() {
               <Stack
                 flexDirection="row"
                 justifyContent="space-between"
-                alignItems="right"
+                alignItems="center"
                 gap={2}
               >
-                <div className="text-sm font-[500] font-myanmar">
-                  {escrow_info.private ? "Private" : "Public"}
+                <div className="flex items-center gap-2">
+                  <div className={`transition-colors ${
+                    !escrow_info?.private ? 'text-black font-semibold' : 'text-gray-500'
+                  }`}>
+                    {escrow_info?.private ? "Private" : "Public"}
+                  </div>
+                  <div className={`w-2 h-2 rounded-full ${
+                    escrow_info?.private ? 'bg-red-500' : 'bg-green-500'
+                  } -translate-y-0.5`} />
                 </div>
                 <div className="flex flex-col space-y-2">
                   <div className="text-xs text-textColor font-myanmar">
