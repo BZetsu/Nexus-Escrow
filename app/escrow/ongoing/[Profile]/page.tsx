@@ -574,7 +574,7 @@ export default function page() {
                     }}
                     className="px-4 mt-4 flex flex-col h-full justify-between"
                   >
-                    <Card className="text-xs text-center !shadow-none !border !border-textColor h-[100px] flex items-center justify-center pb-4">
+                    <Card className="text-xs text-center !shadow-none !border !border-textColor h-[60px] flex items-center justify-center pb-4">
                       <div className="px-4 translate-y-4">
                         Your Submission was rejected you can either Terminate or Dispute
                       </div>

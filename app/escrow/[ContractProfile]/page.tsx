@@ -301,7 +301,7 @@ export default function page() {
               flexDirection="row"
               justifyContent="space-between"
               alignItems="center"
-              className="text-base sm:text-xl font-[600] pt-2"
+              className="text-base sm:text-xl font-[600] pt-4"
             >
               <div className="flex-1 text-base sm:text-3xl font-bold">
                 {escrowInfo && escrowInfo.contractName !== "" ? (
@@ -330,7 +330,7 @@ export default function page() {
               className="h-full min-h-[80px]"
               gap={2}
             >
-              <div className="text-sm font-[500] flex items-center gap-2 translate-y-2">
+              <div className="text-sm font-[500] flex items-center gap-2">
                 <div className={`transition-colors ${
                   !escrowDateInfo?.private ? 'text-black font-semibold' : 'text-gray-500'
                 }`}>
@@ -338,7 +338,7 @@ export default function page() {
                 </div>
                 <div className={`w-2 h-2 rounded-full ${
                   escrowDateInfo?.private ? 'bg-red-500' : 'bg-green-500'
-                } -mt-0.7`} />
+                } -translate-y-0.5`} />
               </div>
               <div className="flex flex-col space-y-2">
                 <div className="text-xs text-textColor">Deadline</div>
@@ -351,7 +351,7 @@ export default function page() {
         </div>
 
         <div className="grid sm:grid-cols-5 gap-4 mt-5">
-          <Card className="!p-0 sm:col-span-2 overflow-hidden h-[290px] sm:h-[550px]">
+          <Card className="!p-0 sm:col-span-2 overflow-hidden h-[250px] sm:h-[500px]">
             <div className="flex flex-col sm:flex-col p-2 sm:p-3 h-full">
               <Image
                 src={founderProfilePic || escrowInfo?.founderInfo?.image || dragon}
@@ -368,9 +368,9 @@ export default function page() {
                 }}
               />
 
-              <div className="mt-2 px-1">
+              <div className="mt-1 px-1 flex flex-col h-full">
                 <div className="border border-gray-200 rounded-xl px-4 py-2 flex items-center justify-between w-full">
-                  <div className="text-lg sm:text-3xl font-[600] font-myanmarButton">
+                  <div className="text-base sm:text-xl font-[600] font-myanmarButton">
                     {escrowInfo ? escrowInfo.founderInfo.name : "--"}
                   </div>
                   <div className="flex items-center gap-2">
@@ -386,7 +386,7 @@ export default function page() {
                   </div>
                 </div>
 
-                <div className="flex justify-center mt-2 px-2">
+                <div className="flex justify-center mt-auto mb-4">
                   <Button
                     onClick={() => {
                       if (escrowInfo && escrowDateInfo) {
@@ -429,9 +429,9 @@ export default function page() {
               </div>
             </Card>
 
-            <Card className="flex-1">
+            <Card className="flex-1 h-[250px]">
               <Button
-                className="!mt-4 w-full !bg-white hover:bg-opacity-0 shadow-none !normal-case border border-gray-300"
+                className="!mt-4 !mb-4 w-full !bg-white hover:bg-opacity-0 shadow-none !normal-case border border-gray-300"
                 style={{ display: "unset" }}
               >
                 <span onClick={() => links(escrowInfo.materials)}>
@@ -445,7 +445,7 @@ export default function page() {
               </Button>
 
               {!applyInfo ? (
-                <div className="flex justify-center h-[120px] items-end pb-4">
+                <div className="flex justify-center">
                   <Button
                     variant="contained"
                     onClick={handleOpenModal}
@@ -455,7 +455,7 @@ export default function page() {
                   </Button>
                 </div>
               ) : (
-                <div className="flex justify-center h-[120px] items-end pb-4">
+                <div className="flex justify-center h-[60px] items-end pb-4">
                   <Button
                     variant="contained"
                     onClick={() => cancel_apply()}
