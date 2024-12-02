@@ -166,7 +166,7 @@ export default function page() {
 
   return (
     <div>
-      <Card width="md" className="pb-10 mt-6">
+      <Card className="pb-10 mt-6 max-w-7xl mx-auto px-5">
         <Stack
           flexDirection="row"
           justifyContent="space-between"

@@ -279,7 +279,7 @@ export default function Page() {
                     <input
                       type="number"
                       min={0}
-                      value={form.Amount}
+                      value={form.Amount || ''}
                       onChange={(e) =>
                         setForm((prevForm) => ({
                           ...prevForm,
@@ -287,7 +287,7 @@ export default function Page() {
                         }))
                       }
                       className={`${inputStyle} w-full`}
-                      placeholder="200"
+                      placeholder="Input USDC amount"
                     />
                     <div className="absolute right-4 top-[50%] translate-y-[-50%]">
                       <Image src={coin} alt="coin" className="w-5 h-5" />
