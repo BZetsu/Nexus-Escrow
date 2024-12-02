@@ -230,17 +230,28 @@ export default function Page() {
             >
               <div>
                 <label className="font-myanmar">Contract Name</label>
-                <input
-                  value={form.ContractName}
-                  onChange={(e) =>
-                    setForm((prevForm) => ({
-                      ...prevForm,
-                      ContractName: e.target.value,
-                    }))
-                  }
-                  className={`${inputStyle} w-full`}
-                  placeholder="E.g., Build a landing page"
-                />
+                <div className="relative">
+                  <input
+                    value={form.ContractName}
+                    onChange={(e) => {
+                      // Limit input to 32 characters
+                      if (e.target.value.length <= 32) {
+                        setForm((prevForm) => ({
+                          ...prevForm,
+                          ContractName: e.target.value,
+                        }))
+                      }
+                    }}
+                    className={`${inputStyle} w-full`}
+                    placeholder="E.g., Build a landing page"
+                    maxLength={32}  // Add maxLength property
+                  />
+                  <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${
+                    form.ContractName.length >= 28 ? 'text-red-500' : 'text-gray-400'
+                  }`}>
+                    {form.ContractName.length}/32
+                  </span>
+                </div>
               </div>
 
               <div className="grid gap-6 grid-cols-4">

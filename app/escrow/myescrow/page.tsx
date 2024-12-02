@@ -166,7 +166,7 @@ export default function page() {
 
   return (
     <div>
-      <Card className="pb-10 mt-6 max-w-7xl mx-auto px-5">
+      <Card className="pb-10 mt-6 w-full max-w-[1800px] mx-auto px-5 sm:px-8">
         <Stack
           flexDirection="row"
           justifyContent="space-between"
@@ -247,6 +247,7 @@ export default function page() {
                       createdAt={el.createdAt}
                       status={status}
                       type={1}
+                      className="w-full p-5 sm:p-8"
                     />
                   );
                 })
@@ -264,6 +265,7 @@ export default function page() {
                     createdAt={el.createdAt}
                     status={el.status}
                     type={1}
+                    className="w-full p-5 sm:p-8"
                   />
                 ))
             :
@@ -280,6 +282,7 @@ export default function page() {
                     createdAt={el.createdAt}
                     status={el.status}
                     type={1}
+                    className="w-full p-5 sm:p-8"
                   />
                 ))
           )}
