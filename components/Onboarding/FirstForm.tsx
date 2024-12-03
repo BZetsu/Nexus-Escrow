@@ -24,6 +24,31 @@ import { useRouter } from "next/navigation";
 import React, { useContext, useEffect, useState } from "react";
 import { SubmitHandler, useForm } from "react-hook-form";
 
+// Update the interface for better type safety
+interface NexusUserResponse {
+  data: Array<{
+    name: string;
+    userId: string;
+  }>;
+}
+
+// Add this custom hook at the top of your component
+const useDebounce = (value: string, delay: number) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+};
+
 export default function FirstForm({ handleGoToStep }: any) {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>("");
@@ -83,25 +108,39 @@ export default function FirstForm({ handleGoToStep }: any) {
   const watchedTwitterProfile = watch("twitterProfile");
   const watchedEmail = watch("email");
 
-  // Add this function to check username availability
-  const checkUsernameAvailability = async (username: string) => {
-    try {
-      interface NexusUserResponse {
-        data: Array<{ name: string }>;
+  // Add state for username availability
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState(true);
+  
+  // Debounce the username check
+  const debouncedUsername = useDebounce(watchedUsername || '', 500);
+
+  // Add this effect to check username availability while typing
+  useEffect(() => {
+    const checkUsername = async () => {
+      if (!debouncedUsername) {
+        setIsUsernameAvailable(true);
+        return;
       }
-      const response = await backendApi.get<NexusUserResponse>(`/nexus-user`);
-      const users = response.data;
-      
-      const exists = users.some(user => 
-        user.name?.toLowerCase() === username.toLowerCase()
-      );
-      
-      return !exists;
-    } catch (error) {
-      console.error('Error checking username:', error);
-      return true;
-    }
-  };
+
+      setIsCheckingUsername(true);
+      try {
+        const response = await backendApi.get<NexusUserResponse>('/nexus-user');
+        const exists = response.data.some(user => 
+          user.name?.toLowerCase() === debouncedUsername.toLowerCase()
+        );
+        
+        setIsUsernameAvailable(!exists);
+      } catch (error) {
+        console.error('Error checking username:', error);
+        setIsUsernameAvailable(true);
+      } finally {
+        setIsCheckingUsername(false);
+      }
+    };
+
+    checkUsername();
+  }, [debouncedUsername]);
 
   // Update the onSubmit handler
   const onSubmit: SubmitHandler<OnboardingScreenForm> = async (data) => {
@@ -110,9 +149,6 @@ export default function FirstForm({ handleGoToStep }: any) {
     const loadingToastId = notify_laoding("Creating Profile...!");
     
     try {
-      // Check username availability before proceeding
-      const isUsernameAvailable = await checkUsernameAvailability(watchedUsername);
-      
       if (!isUsernameAvailable) {
         notify_delete(loadingToastId);
         notify_error("Username already exists. Please choose another.");
@@ -182,7 +218,7 @@ export default function FirstForm({ handleGoToStep }: any) {
       <Stack alignItems="center" gap={5}>
         <Stack
           gap={3}
-          className="flex-col md:!flex-row items-center sm:items-end pt-5"
+          className="flex-col md:!flex-row items-center sm:items-end pt-5 space-y-8 sm:space-y-0"
         >
           <div className="rounded-2xl bg-white relative w-[14rem] h-[14rem] group">
             {imagePreview ? (
@@ -205,23 +241,38 @@ export default function FirstForm({ handleGoToStep }: any) {
               className="absolute top-0 left-0 w-full h-full opacity-0 z-10 cursor-pointer"
             />
           </div>
-          <div className="grid gap-4">
+          <div className="grid gap-6 sm:gap-4">
             <div className="sm:col-span-1">
               <label
                 htmlFor="username"
-                className="block text-sm font-semibold leading-5 text-gray-900 mb-1"
+                className="block text-sm !font-semibold leading-5 text-gray-900 mb-0.5 text-center sm:text-left"
               >
                 Username
               </label>
               <div className="mt-1 flex flex-col gap-1">
-                <div className="flex rounded-md shadow-sm sm:max-w-md">
+                <div className="flex rounded-md shadow-sm sm:max-w-md relative">
                   <input
                     {...register("username")}
                     type="text"
                     autoComplete="username"
-                    className="block bg-white rounded-md flex-1 border-0 py-1.5 px-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm sm:leading-6 min-w-[300px]"
+                    className={`block bg-white rounded-md flex-1 border border-gray-200 py-1.5 px-4 
+                      text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm 
+                      sm:leading-6 min-w-[300px] transition-all duration-200
+                      hover:border-gray-300 focus:border-gray-400 
+                      ${!isUsernameAvailable ? 'border-red-500' : ''}`}
                     placeholder=""
                   />
+                  {watchedUsername && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {isCheckingUsername ? (
+                        <span className="text-gray-400 text-[9.3px]">Checking...</span>
+                      ) : !isUsernameAvailable ? (
+                        <span className="text-red-500 text-[9.3px]">Username taken, try another</span>
+                      ) : (
+                        <span className="text-green-500 text-[9.3px]">Available</span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {errors.username?.message && (
                   <p className="text-red-700 text-xs">
@@ -233,7 +284,7 @@ export default function FirstForm({ handleGoToStep }: any) {
             <div className="sm:col-span-1">
               <label
                 htmlFor="twitterProfile"
-                className="block text-sm font-semibold leading-5 text-gray-900 mb-1"
+                className="block text-sm !font-semibold leading-5 text-gray-900 mb-0.5 text-center sm:text-left"
               >
                 Twitter Profile
               </label>
@@ -242,7 +293,10 @@ export default function FirstForm({ handleGoToStep }: any) {
                   <input
                     {...register("twitterProfile")}
                     type="text"
-                    className="block bg-white rounded-md flex-1 border-0 py-1.5 px-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm sm:leading-6"
+                    className="block bg-white rounded-md flex-1 border border-gray-200 py-1.5 px-4 
+                      text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm 
+                      sm:leading-6 transition-all duration-200
+                      hover:border-gray-300 focus:border-gray-400"
                     placeholder=""
                   />
                 </div>
@@ -256,7 +310,7 @@ export default function FirstForm({ handleGoToStep }: any) {
             <div className="sm:col-span-1">
               <label
                 htmlFor="email"
-                className="block text-sm font-semibold leading-5 text-gray-900 mb-1"
+                className="block text-sm !font-semibold leading-5 text-gray-900 mb-0.5 text-center sm:text-left"
               >
                 Email Address
               </label>
@@ -265,7 +319,10 @@ export default function FirstForm({ handleGoToStep }: any) {
                   <input
                     {...register("email")}
                     type="email"
-                    className="block bg-white rounded-md flex-1 border-0 py-1.5 px-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm sm:leading-6"
+                    className="block bg-white rounded-md flex-1 border border-gray-200 py-1.5 px-4 
+                      text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm 
+                      sm:leading-6 transition-all duration-200
+                      hover:border-gray-300 focus:border-gray-400"
                     placeholder=""
                   />
                 </div>
@@ -281,9 +338,10 @@ export default function FirstForm({ handleGoToStep }: any) {
 
         <div className="md:!ml-[15rem]">
           <Button
-            className="!bg-main !text-second !font-semibold !text-sm !capitalize !px-12 !py-2 disabled:!bg-main/30 disabled:!text-black/40 font-mulish "
+            className="!bg-main !text-second !font-semibold !text-sm !capitalize !px-12 !py-2 
+              disabled:!bg-main/30 disabled:!text-black/40 font-mulish"
             variant="contained"
-            disabled={!isValid}
+            disabled={!isValid || !isUsernameAvailable || isCheckingUsername}
             type="submit"
           >
             Next

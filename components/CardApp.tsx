@@ -11,18 +11,20 @@ interface UserDetails {
   name: string;
   image: string;
   roles: string[];
+  role?: string;
+  userId: string;
 }
 
-// Add interface for API response
+// Update the ApiResponse interface to match the actual API response
 interface ApiResponse {
-  data: {
-    data: Array<{
-      address: string;
-      name: string;
-      image: string;
-      roles: string[];
-    }>;
-  };
+  data: Array<{  // Remove the nested 'data' property
+    address: string;
+    name: string;
+    image: string;
+    roles: string[];
+    role?: string;
+    userId: string;
+  }>;
 }
 
 export default function CardApp({
@@ -47,16 +49,28 @@ export default function CardApp({
       try {
         if (data?.user) {
           const response = await backendApi.get<ApiResponse>('/nexus-user');
-          const users = response.data.data;
-          const userDetail = users.find((user: any) => 
-            user.address === data.user.toBase58()
-          );
           
-          // Debug logs
+          if (!response || !response.data) {
+            console.error('Invalid API response:', response);
+            return;
+          }
+
+          // First try to find by userId
+          let userDetail = response.data.find(user => 
+            user.userId === data.user.toBase58()
+          );
+
+          // If not found by userId, try wallet address as fallback
+          if (!userDetail) {
+            userDetail = response.data.find(user => 
+              user.address === data.user.toBase58()
+            );
+          }
+          
           console.log('User Data Debug:', {
             userToFind: data.user.toBase58(),
+            searchName: title,
             foundUser: userDetail,
-            allUsers: users,
             imageUrl: userDetail?.image
           });
           
@@ -70,6 +84,42 @@ export default function CardApp({
     };
 
     fetchUserDetails();
+  }, [data?.user, title]);
+
+  // Add event listener for profile updates
+  useEffect(() => {
+    const handleUserInfoUpdate = async (event: any) => {
+      try {
+        if (data?.user) {
+          const response = await backendApi.get<ApiResponse>('/nexus-user');
+          
+          if (!response || !response.data) return;
+
+          // First try to find by userId
+          let userDetail = response.data.find(user => 
+            user.userId === data.user.toBase58()
+          );
+
+          // Fallback to address if needed
+          if (!userDetail) {
+            userDetail = response.data.find(user => 
+              user.address === data.user.toBase58()
+            );
+          }
+          
+          if (userDetail) {
+            setUserDetails(userDetail);
+          }
+        }
+      } catch (error) {
+        console.error('Error refreshing user details:', error);
+      }
+    };
+
+    window.addEventListener('userInfoUpdated', handleUserInfoUpdate);
+    return () => {
+      window.removeEventListener('userInfoUpdated', handleUserInfoUpdate);
+    };
   }, [data?.user]);
 
   const links = (_link: string) => {
@@ -109,7 +159,7 @@ export default function CardApp({
         flexDirection="row"
         alignItems="center"
         justifyContent="space-between"
-        className="py-3"
+        className="py-3 pr-4"
       >
         <Stack flexDirection="row" alignItems="start" gap={2}>
           <div className="relative w-20 h-20 overflow-hidden rounded-lg">
@@ -144,7 +194,7 @@ export default function CardApp({
             </div>
             <div className="flex flex-col gap-0.5">
               <div className="text-xs text-gray-700 font-[400] line-clamp-1">
-                {userDetails?.roles?.[0] || "No Role Yet"}
+                {userDetails?.role || userDetails?.roles?.[0] || "No Role Yet"}
               </div>
               <div className="text-[10px] text-red-500">
                 Twitter not verified

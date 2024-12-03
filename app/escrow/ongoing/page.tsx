@@ -222,7 +222,7 @@ export default function page() {
                   type={3}
                   onClick={(e: React.MouseEvent) => handleContractClick(e, `/escrow/ongoing/profile/${el.pubkey.toBase58()}`)}
                   disabled={isNavigating}
-                  className={isNavigating ? 'opacity-50' : ''}
+                  className={isNavigating ? 'opacity-30' : ''}
                 />
               ))
             ) : value === 1 ? (
@@ -268,7 +268,7 @@ export default function page() {
         </Card>
 
         <Card className="pb-10">
-          <div className="text-sm text-textColor">Pending Applications</div>
+          <div className="text-sm text-textColor text-center sm:text-left">Pending Applications</div>
 
           <Stack mt={4} spacing={2.8}>
             {pendingEscrow &&

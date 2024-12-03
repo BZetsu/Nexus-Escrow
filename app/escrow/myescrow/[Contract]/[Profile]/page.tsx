@@ -239,7 +239,7 @@ export default function page() {
                 </div>
                 <div className="pt-[.5rem]">
                   <span>             
-                    {userInfo && Number(userInfo.paymentRatePerHour * 160)}
+                    {userInfo && Number(userInfo.paymentRatePerHour || 0)}
                   </span>
                   <span> / Month</span>
                 </div>

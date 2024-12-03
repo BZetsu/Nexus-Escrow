@@ -358,7 +358,7 @@ export default function page() {
               alignItems="center"
               className="text-base sm:text-xl font-[600] w-full pt-2"
             >
-              <div className="flex-1 text-base sm:text-2xl font-bold translate-y-1">
+              <div className="flex-1 text-base sm:text-xl md:text-2xl font-bold translate-y-1">
                 {escrowInfo && escrowInfo.contractName !== "" ? (
                   <span className="text-black">
                     {escrowInfo.contractName}
