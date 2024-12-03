@@ -54,7 +54,11 @@ export default function Log() {
       </Stack>
 
       <div id="wallet" className="mt-20 mx-auto w-fit">
-        <WalletMultiButton />
+        <WalletMultiButton 
+          className="!bg-second !text-white hover:!bg-second/95 transition-all duration-300 !px-8 hover:!scale-105 hover:!shadow-lg hover:!shadow-black/10 !rounded-xl"
+        >
+          Launch App
+        </WalletMultiButton>
       </div>
 
       <Card width="sm" className="!mt-24 !mb-14 mx-auto max-w-[800px] !pt-12">
