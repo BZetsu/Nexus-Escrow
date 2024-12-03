@@ -35,19 +35,21 @@ export default function Log() {
     <div className="px-4 sm:px-0 absolute top-[57px] left-0 w-full logBg overflow-y-scroll ">
       <Toaster />
       <Stack spacing={3} alignItems="center" mt={11}>
-        <div className="text-4xl sm:text-3xl text-center font-myanmar font-[500] flex flex-col">
+        <div className="text-3xl sm:text-4xl text-center font-myanmar font-[500] flex flex-col">
           <div>
             <span className="text-[#858585]">Streamlining Daily</span>{" "}
-            <span>Managerial</span>{" "}
+            <span>Managerial</span>
+          </div>
+          <div>
+            <span className="text-[#858585]">and</span>{" "}
+            <span>Financial Activities</span>
+          </div>
+          <div>
+            <span className="text-[#858585]">of</span>{" "}
+            <span>Web3 businesses</span>{" "}
             <span className="text-[#858585]">and</span>
           </div>
           <div>
-            <span>Financial Activities</span>{" "}
-            <span className="text-[#858585]">of</span>
-          </div>
-          <div>
-            <span>Web3 businesses</span>{" "}
-            <span className="text-[#858585]">and</span>{" "}
             <span>Stakeholders</span>
           </div>
         </div>
