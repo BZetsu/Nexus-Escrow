@@ -35,9 +35,21 @@ export default function Log() {
     <div className="px-4 sm:px-0 absolute top-[57px] left-0 w-full logBg overflow-y-scroll ">
       <Toaster />
       <Stack spacing={3} alignItems="center" mt={11}>
-        <div className="text-4xl sm:text-3xl text-center font-myanmar font-[500]">
-          Streamlining daily managerial and <br /> financial activities of{" "}
-          <br /> Web3 businesses and stakeholders
+        <div className="text-4xl sm:text-3xl text-center font-myanmar font-[500] flex flex-col">
+          <div>
+            <span className="text-[#858585]">Streamlining Daily</span>{" "}
+            <span>Managerial</span>{" "}
+            <span className="text-[#858585]">and</span>
+          </div>
+          <div>
+            <span>Financial Activities</span>{" "}
+            <span className="text-[#858585]">of</span>
+          </div>
+          <div>
+            <span>Web3 businesses</span>{" "}
+            <span className="text-[#858585]">and</span>{" "}
+            <span>Stakeholders</span>
+          </div>
         </div>
       </Stack>
 
@@ -45,21 +57,23 @@ export default function Log() {
         <WalletMultiButton />
       </div>
 
-      <Card width="md" className="!mt-24  !mb-14 ">
-        <div className="text-sm">Nexus Explore</div>
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4 mt-3">
-          {NexusTypes.map((el, i) => (
-            <motion.button
-              key={i}
-              className="py-4 px-2 grid grid-cols-2 items-center md:gap-4 sm:gap-1 border border-black/30 rounded-xl disabled:opacity-25 w-full"
-              disabled={el.disabled}
-              whileHover={!el.disabled ? { scale: 1.02 } : {}}
-              onClick={notify}
-            >
-              <Image src={el.image} alt="" className="w-full" />
-              <div className="text-[10px] sm:text-xs text-left">{el.title}</div>
-            </motion.button>
-          ))}
+      <Card width="sm" className="!mt-24 !mb-14 mx-auto max-w-[800px] !pt-12">
+        <div className="relative">
+          <div className="text-sm absolute -top-9 left-0">Nexus Explore</div>
+          <div className="grid gap-1.5 grid-cols-2 sm:grid-cols-4">
+            {NexusTypes.map((el, i) => (
+              <motion.button
+                key={i}
+                className="py-1.5 px-1 grid grid-cols-2 items-center md:gap-2 sm:gap-1 border border-black/30 rounded-xl disabled:opacity-25 w-full"
+                disabled={el.disabled}
+                whileHover={!el.disabled ? { scale: 1.02 } : {}}
+                onClick={notify}
+              >
+                <Image src={el.image} alt="" className="w-[95%]" />
+                <div className="text-[9px] sm:text-[11px] text-left">{el.title}</div>
+              </motion.button>
+            ))}
+          </div>
         </div>
       </Card>
     </div>
