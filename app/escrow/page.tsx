@@ -264,7 +264,7 @@ export default function Page() {
                         }))
                       }
                     }}
-                    className={`${inputStyle} w-[98%] h-[48px] pt-[14px] pb-5`}
+                    className={`${inputStyle} w-[98%] h-[50px] pt-6 pb-5`}
                     placeholder="E.g., Build a landing page"
                     maxLength={32}
                   />
@@ -288,7 +288,7 @@ export default function Page() {
                         TelegramLink: e.target.value,
                       }))
                     }
-                    className={`${inputStyle} w-full h-[48px] pt-[14px] pb-5`}
+                    className={`${inputStyle} w-full h-[50px] pt-6 pb-5`}
                     placeholder="E.g., https://example.tme.com"
                   />
                 </div>
@@ -299,7 +299,7 @@ export default function Page() {
                     type="date"
                     value={timeValue}
                     onChange={handleTimeChange}
-                    className={`${inputStyle} w-full h-[48px] pt-[14px] pb-5`}
+                    className={`${inputStyle} w-full h-[50px] pt-6 pb-5`}
                     placeholder="E.g., 2024-08-15"
                   />
                 </div>
@@ -319,7 +319,7 @@ export default function Page() {
                           Amount: Number(e.target.value),
                         }))
                       }
-                      className={`${inputStyle} w-[98%] h-[48px] pt-[14px] pb-5`}
+                      className={`${inputStyle} w-[98%] h-[50px] pt-6 pb-5`}
                       placeholder="Input USDC amount"
                     />
                     <div className="absolute right-4 top-[50%] translate-y-[-50%]">
@@ -339,7 +339,7 @@ export default function Page() {
                         Link: e.target.value,
                       }))
                     }
-                    className={`${inputStyle} w-[100%] h-[48px] pt-[14px] pb-5`}
+                    className={`${inputStyle} w-[100%] h-[50px] pt-6 pb-5`}
                     placeholder="E.g., https://example.figma.com"
                   />
                 </div>

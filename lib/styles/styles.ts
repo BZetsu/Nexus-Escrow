@@ -7,15 +7,18 @@ export const inputStyle = `
   border 
   border-black/60 
   bg-transparent 
-  px-4 
-  text-gray-900 
-  placeholder:text-gray-400 
+  px-8 
+  py-1
+  text-gray-500
+  placeholder:text-gray-150/5
+  placeholder:translate-y-4
+  placeholder:pl-0.5
   outline-none 
   text-xs 
   sm:text-sm 
   sm:leading-6 
   rounded-md 
-  shadow-sm 
+  shadow-[0_1px_2px_0px_rgba(0,0,0,0.05)]
   ring-1 
   ring-inset 
   ring-gray-300 

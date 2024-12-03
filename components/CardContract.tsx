@@ -119,9 +119,12 @@ export default function CardContract({
       onClick={handleClick}
       className="w-full block"
     >
-      <div className={`p-5 border border-gray-300 rounded-md shadow-md w-full font-myanmar relative ${
-        path.includes("myescrow/") ? "p-8" : ""
-      }`}>
+      <div className={`
+        p-5 border border-gray-300 rounded-md 
+        shadow-[0_1px_6px_0px_rgba(0,0,0,0.04)] 
+        w-full font-myanmar relative 
+        ${path.includes("myescrow/") ? "p-8" : ""}
+      `}>
         {status !== 0 && status !== 1 && (
           <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" 
                title={getStatus(status)}>

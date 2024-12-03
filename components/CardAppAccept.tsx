@@ -131,7 +131,7 @@ export default function CardAppAccept({
         flexDirection="row"
         alignItems="center"
         justifyContent="space-between"
-        className="py-5"
+        className="py-4"
       >
         <Stack flexDirection="row" alignItems="start" gap={3}>
           <div className="relative w-20 h-20 overflow-hidden rounded-lg">

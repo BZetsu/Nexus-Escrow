@@ -210,9 +210,11 @@ export default function Example() {
               <div className="flex flex-1 items-center justify-center sm:items-center sm:justify-start">
                 <div className="flex flex-shrink-0 items-center">
                   <Image
-                    className="h-11 w-auto cursor-pointer"
+                    className="h-8 w-auto cursor-pointer opacity-80"
                     src={Logo}
                     alt="logo"
+                    width={144}
+                    height={45}
                     onClick={() => router.push("/nexusexplore")}
                   />
                 </div>

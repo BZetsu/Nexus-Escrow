@@ -45,7 +45,7 @@ export default function CardAccordion({
           </Stack>
         </Stack>
       </Card>
-      <Card className={`rounded-t-none min-h-24 w-[98%] mx-auto ${cardHeight} escrow overflow-y-scroll`}>
+      <Card className={`rounded-t-none min-h-24 w-[99.5%] mx-auto ${cardHeight} escrow overflow-y-scroll`}>
         <Stack spacing={2}>
           {data.map((el: any, i: number) => (
             <CardApp

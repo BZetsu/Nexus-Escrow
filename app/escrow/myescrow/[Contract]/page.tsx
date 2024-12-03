@@ -609,7 +609,7 @@ export default function page() {
       <div>
         <div className="max-w-7xl mx-auto pt-4">
           <div className="flex items-center gap-3 w-full">
-            <Card width="lg" className="flex-1">
+            <Card width="lg" className="flex-1 shadow-[0_2px_10px_0px_rgba(0,0,0,0.05)] sm:shadow-[0_4px_20px_0px_rgba(0,0,0,0.1)]">
               <Stack
                 flexDirection="row"
                 alignItems="center"
@@ -634,20 +634,23 @@ export default function page() {
 
                   <button onClick={handleTitleEdit}>
                     <FaEdit
-                      className="text-xl text-textColor pt-[2px]"
+                      className="text-xl text-textColor pt-[2px] opacity-30"
                       style={{ display: "unset" }}
                     />
                   </button>
                 </Stack>
-                <Stack flexDirection="row" alignItems="start" gap={1}>
-                  <Image src={Coin} alt="coin" className="w-5 pt-[2px]" />
-                  <div className="text-sm sm:text-xl font-semibold leading-none ">
+                
+                {/* USDC Amount - Adjusted position and weight */}
+                <Stack flexDirection="row" gap={1} alignItems={"flex-start"}>
+                  <Image src={Coin} alt="coin" className="w-5" />
+                  <div className="font-myanmar_khyay text-sm sm:text-xl font-[600] sm:font-semibold leading-none mt-[2px]">
                     {escrowInfo ? Number(escrowInfo.amount) / 1000_000 : "--"}
                   </div>
                 </Stack>
               </Stack>
             </Card>
 
+            {/* Desktop share button - hide on mobile */}
             <div
               className="bg-white rounded-xl p-5 h-full hidden sm:block cursor-pointer"
               onClick={() => setShowShareModal(true)}
@@ -667,7 +670,7 @@ export default function page() {
                   Description
                 </div>
                 <button onClick={handleDescriptionEdit}>
-                  <FaEdit className="text-lg text-textColor" />
+                  <FaEdit className="text-lg text-textColor opacity-30" />
                 </button>
               </div>
               <div className="text-xs sm:text-sm mt-3 leading-7 min-h-24 py-2">
@@ -692,21 +695,31 @@ export default function page() {
                   <Stack
                     flexDirection="row"
                     gap={1}
-                    className="text-sm mb-6"
+                    className="text-sm mb-6 items-center justify-between w-full"
                     alignItems="center"
                   >
-                    <div className={`transition-colors ${!escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
-                      Public
+                    <div className="flex items-center gap-2">
+                      <div className={`transition-colors ${!escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
+                        Public
+                      </div>
+                      <Switch
+                        checked={escrowDateInfo.private}
+                        onChange={(e) => {
+                          privates(e.target.checked)
+                        }}
+                        className="-mt-[6px]"
+                      />
+                      <div className={`transition-colors ${escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
+                        Private
+                      </div>
                     </div>
-                    <Switch
-                      checked={escrowDateInfo.private}
-                      onChange={(e) => {
-                        privates(e.target.checked)
-                      }}
-                      className="-mt-[6px]"
-                    />
-                    <div className={`transition-colors ${escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
-                      Private
+                    
+                    {/* Mobile share button */}
+                    <div
+                      className="sm:hidden cursor-pointer flex items-center"
+                      onClick={() => setShowShareModal(true)}
+                    >
+                      <Image src={linksvg} alt="" className="w-[18px] h-[18px]" />
                     </div>
                   </Stack>
 
@@ -717,7 +730,7 @@ export default function page() {
                         onClick={() => setOpen(true)}
                         className="-mr-2"
                       >
-                        <EditOutlinedIcon className="text-textColor text-base" />
+                        <EditOutlinedIcon className="text-textColor text-base opacity-30" />
                       </IconButton>
                     </div>
                     <div className="flex items-center">
@@ -752,7 +765,7 @@ export default function page() {
                   cancel={handleCancelProjectTermination}
                   escrowDateInfo={escrowDateInfo}
                   refreshData={refreshAccordions}
-                  cardHeight="h-[285px]"
+                  cardHeight="h-[400px]"
                 >
                   {escrowInfo && escrowInfo.status !== 5 && escrowInfo.status !== 3 && escrowInfo.status !== 6 && escrowInfo.status !== 1 && <Stack flexDirection="row" gap={1}>
                     <Button
@@ -865,7 +878,7 @@ export default function page() {
                 link={"approve"}
                 font_size="!text-sm"
                 padding="!pt-[0.2rem]"
-                cardHeight="h-[285px]"
+                cardHeight="h-[400px]"
               />
             )}
           </div>

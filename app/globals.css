@@ -26,9 +26,24 @@
     color: black;
     font-family: "Myanmar Text" !important;
     letter-spacing: 0.8px;
-    background-image: linear-gradient(to bottom, #fbfbfbcb, #e6e6e6);
+    background-image: linear-gradient(
+      to bottom,
+      #ffffff,  /* Lighter start color */
+      #f5f5f5   /* Lighter end color */
+    );
     background-repeat: no-repeat;
     min-height: 100vh;
+  }
+
+  /* Add specific mobile styles */
+  @media (max-width: 768px) {
+    body {
+      background-image: linear-gradient(
+        to bottom,
+        #ffffff,      /* Even lighter start for mobile */
+        #f8f8f8      /* Even lighter end for mobile */
+      );
+    }
   }
 }
 

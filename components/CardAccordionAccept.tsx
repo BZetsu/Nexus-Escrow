@@ -174,7 +174,17 @@ export default function CardAccordionAccept({
           </Stack>
         </Stack>
       </Card>
-      <Card className={`rounded-t-none min-h-24 w-[98%] mx-auto !px-0 ${cardHeight || 'h-[360px]'}`}>
+      <Card className={`
+        rounded-t-none 
+        min-h-24 
+        w-[99.5%] 
+        mx-auto 
+        !px-0 
+        ${cardHeight}
+        escrow 
+        overflow-y-scroll
+        shadow-[0_2px_8px_0px_rgba(0,0,0,0.06)]
+      `}>
         <Stack spacing={2} className="escrow overflow-y-scroll px-5">
           {data.map((el: any, i: number) => (
             <CardAppAccept
