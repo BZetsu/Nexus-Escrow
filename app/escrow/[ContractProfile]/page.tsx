@@ -7,7 +7,7 @@ import { FreelacerApply } from "@/lib/NexusProgram/escrow/freelacerApply";
 import { getEscrowInfo } from "@/lib/NexusProgram/escrow/utils.ts/getEscrowInfo";
 import { get_apply_info } from "@/lib/NexusProgram/escrow/utils.ts/get_apply_info";
 import { get_userr_info } from "@/lib/NexusProgram/escrow/utils.ts/get_userr_info";
-import { USER_PREFIX } from "@/lib/constants/constants";
+import { USER_PREFIX, PROGRAM_ID } from "@/lib/constants/constants";
 import { inputStyle } from "@/lib/styles/styles";
 import { backendApi } from "@/lib/utils/api.util";
 import { formatTime, timeLeft } from "@/lib/utils/time_formatter";
@@ -68,6 +68,8 @@ export default function page() {
   const [showDispute, setShowDispute] = useState(false);
   const [showTerminate, setShowTerminate] = useState(false);
   const [countdown, setCountdown] = useState("");
+  const [isApplying, setIsApplying] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
 
   function handleCloseModal() {
     setOpen(false);
@@ -112,19 +114,14 @@ export default function page() {
       const escrow = new web3.PublicKey(address);
       const info = await getEscrowInfo(anchorWallet, connection, escrow);
       
-      console.log("Escrow Info:", info);
-      console.log("Telegram Link:", info?.telegramLink);
+      if (!info || !info.founder) return;
 
       const founder_info = await get_userr_info(
         anchorWallet,
         connection,
-        info!.founder
+        info.founder
       );
-      info!.escrow = escrow;
-
-      const PROGRAM_ID = new web3.PublicKey(
-        "3GKGywaDKPQ6LKXgrEvBxLAdw6Tt8PvGibbBREKhYDfD"
-      );
+      info.escrow = escrow;
 
       const [freelancer] = web3.PublicKey.findProgramAddressSync(
         [anchorWallet!.publicKey.toBuffer(), Buffer.from(USER_PREFIX)],
@@ -138,8 +135,6 @@ export default function page() {
       );
 
       const databaseEscrowInfo = await backendApi.get<EscrowResponse>(`/escrow/${address}`);
-      console.log("Database Escrow Info:", databaseEscrowInfo);
-
       const founderAddress = info?.founderInfo?.walletAddress || info?.founder?.toBase58();
       
       if (founderAddress) {
@@ -150,20 +145,17 @@ export default function page() {
       }
 
       setEscrowDateInfo(databaseEscrowInfo.data);
-      info!.founderInfo = founder_info;
-      info!.freelancer = freelancer_info;
-      console.log("infoOOOOOOOOOOOO " + info);
-      console.log(info);
+      info.founderInfo = founder_info;
+      info.freelancer = freelancer_info;
       setEscrowInfo(info);
-      // console.log(info, "info", formatTime(info!.deadline));
-      setTelegram(freelancer_info!.telegramId);
+      setTelegram(freelancer_info?.telegramId || '');
 
-      if (founder_info && founder_info.name) {
-        console.log("Found founder name:", founder_info.name);
+      if (founder_info?.name) {
         await getFounderProfile(founder_info.name);
       }
+
     } catch (e) {
-      console.log(e);
+      console.error('Error loading escrow info:', e);
     } finally {
       setIsLoading(false);
     }
@@ -185,13 +177,16 @@ export default function page() {
   };
 
   const apply = async () => {
+    if (isApplying || !telegram.trim()) {
+      notify_error("Please enter a valid Telegram contact");
+      return;
+    }
+
     try {
-      if (telegram.length == 0) {
-        return console.log("need telegram first");
-      }
-      notify_laoding("Applying to work...!")
-      console.log(escrowInfo)
-      const tx = await FreelacerApply(
+      setIsApplying(true);
+      notify_laoding("Applying to work...");
+
+      await FreelacerApply(
         anchorWallet,
         connection,
         wallet,
@@ -201,31 +196,41 @@ export default function page() {
         escrowInfo.contractName,
         Number(escrowInfo.deadline)        
       );
+
       notify_delete();
-      notify_success("Applied Successfully!")
+      notify_success("Applied Successfully!");
+      handleCloseModal();
+
     } catch (e) {
       notify_delete();
       notify_error("Application Failed!");
-      console.log(e);
+    } finally {
+      setIsApplying(false);
     }
   };
 
   const cancel_apply = async () => {
+    if (isCanceling) return;
+
     try {
-      notify_laoding("Canceling Application...!")
-      console.log(escrowInfo)
-      const tx = await closeApply(
+      setIsCanceling(true);
+      notify_laoding("Canceling Application...");
+
+      await closeApply(
         anchorWallet,
         connection,
         wallet,
         escrowInfo.escrow,
       );
+
       notify_delete();
-      notify_success("Transaction Success!")
+      notify_success("Application Canceled Successfully!");
+      
     } catch (e) {
       notify_delete();
-      notify_error("Transaction Failed!");
-      console.log(e);
+      notify_error("Cancellation Failed!");
+    } finally {
+      setIsCanceling(false);
     }
   };
 
@@ -390,7 +395,7 @@ export default function page() {
         </div>
 
         <div className="grid sm:grid-cols-5 gap-4 mt-5">
-          <Card className="!p-0 sm:col-span-2 overflow-hidden h-[250px] sm:h-[500px]">
+          <Card className="!p-0 sm:col-span-2 overflow-hidden h-[280px] sm:h-[520px]">
             <div className="flex flex-col sm:flex-col p-2 sm:p-3 h-full">
               <Image
                 src={founderProfilePic || escrowInfo?.founderInfo?.image || dragon}
@@ -407,8 +412,8 @@ export default function page() {
                 }}
               />
 
-              <div className="mt-3 px-1">
-                <div className="border border-gray-200 rounded-xl px-4 py-2 flex items-center justify-between w-full">
+              <div className="mt-7 px-1">
+                <div className="border border-gray-200 rounded-xl px-4 py-4 flex items-center justify-between w-full">
                   <div className="text-base sm:text-xl font-[600] font-myanmarButton">
                     {escrowInfo ? escrowInfo.founderInfo.name : "--"}
                   </div>
@@ -467,7 +472,7 @@ export default function page() {
               </div>
             </Card>
 
-            <Card className="flex-1 h-[160px]">
+            <Card className="flex-1 h-[50px]">
               <Button
                 className="!mt-2 !mb-2 w-full !bg-white hover:bg-opacity-0 shadow-none !normal-case border border-gray-300"
                 style={{ display: "unset" }}
@@ -483,23 +488,25 @@ export default function page() {
               </Button>
 
               {!applyInfo ? (
-                <div className="flex justify-center mt-6">
+                <div className="flex justify-center mt-4">
                   <Button
-                    variant="contained"
                     onClick={handleOpenModal}
-                    className="!text-xs sm:!text-sm !font-semibold !bg-main !text-second !w-fit !normal-case !py-3 !px-8"
+                    variant="contained"
+                    disabled={isApplying}
+                    className="!text-xs sm:!text-sm !font-semibold !normal-case !py-2 !text !px-10 !bg-main !text-second !w-fit disabled:!opacity-50"
                   >
                     Apply to work
                   </Button>
                 </div>
               ) : (
-                <div className="flex justify-center h-[50px] items-end mt-6">
+                <div className="flex justify-center h-[30px] items-end mt-4">
                   <Button
                     variant="contained"
                     onClick={() => cancel_apply()}
-                    className="!text-xs sm:!text-sm !font-semibold !bg-main !text-second !w-fit !normal-case !py-3 !px-8"
+                    disabled={isCanceling}
+                    className="!text-xs sm:!text-sm !font-semibold !bg-main !text-second !w-fit !normal-case !py-3 !px-8 disabled:!opacity-50"
                   >
-                    Cancel Apply
+                    {isCanceling ? "Canceling..." : "Cancel Apply"}
                   </Button>
                 </div>
               )}
@@ -529,21 +536,12 @@ export default function page() {
             </div>
 
             <div className="mt-10 w-full">
-              <label className="block mb-2 text-sm font-medium">Telegram Link for communication:</label>
+              <label className="block mb-2 text-sm font-medium">
+                Telegram Link for communication:
+              </label>
               <input
                 value={telegram}
-                className={`
-                  ${inputStyle} 
-                  w-full 
-                  h-14 
-                  px-4 
-                  py-4
-                  text-base
-                  border-2
-                  ring-2
-                  focus:ring-2
-                  focus:ring-offset-2
-                `}
+                className={`${inputStyle} w-full h-14 px-4 py-4 text-base border-2 ring-2 focus:ring-2 focus:ring-offset-2`}
                 onChange={(e) => setTelegram(e.target.value)}
                 placeholder="Enter your Telegram username or link"
               />
@@ -553,9 +551,10 @@ export default function page() {
               <Button
                 onClick={() => apply()}
                 variant="contained"
-                className="!text-xs sm:!text-sm !font-semibold !normal-case !py-2 !text !px-10 !bg-main !text-second !w-fit"
+                disabled={isApplying}
+                className="!text-xs sm:!text-sm !font-semibold !normal-case !py-2 !text !px-10 !bg-main !text-second !w-fit disabled:!opacity-50"
               >
-                Apply to work
+                {isApplying ? "Applying..." : "Apply to work"}
               </Button>
             </Stack>
           </div>

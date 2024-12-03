@@ -120,9 +120,15 @@ export default function page() {
     }
   }
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const submission = async () => {
+    if (isSubmitting) return;
+    
     try {
-      notify_laoding("Making Submission...")
+      setIsSubmitting(true);
+      notify_laoding("Making Submission...");
+
       const address = pathname.replace("/escrow/ongoing/", "");
       const escrow = new web3.PublicKey(address);
       console.log(material)
@@ -130,17 +136,25 @@ export default function page() {
       // setShowSubmission(true);
       console.log(tx);
       notify_delete();
-      notify_success("Submitted Successfully!")
+      notify_success("Submitted Successfully!");
+
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");      console.log(e);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
+  const [isDisputing, setIsDisputing] = useState(false);
+
   const Tarminat = async () => {
+    if (isDisputing) return;
+    
     try {
-      
-      notify_laoding("Terminating Contract...")
+      setIsDisputing(true);
+      notify_laoding("Terminating Contract...");
+
       const address = pathname.replace("/escrow/ongoing/", "");
       const escrow = new web3.PublicKey(address);
 
@@ -148,15 +162,22 @@ export default function page() {
       // setShowSubmission(true);
       console.log(tx);
       notify_delete();
-      notify_success("Contract Terminated Successfully!")
+      notify_success("Contract Terminated Successfully!");
+
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
       console.log(e);
+    } finally {
+      setIsDisputing(false);
     }
   };
 
+  const [isTerminating, setIsTerminating] = useState(false);
+
   const Dispute = async () => {
+    if (isTerminating) return;
+    
     try {
       notify_laoding("Opening Dispute...")!;
       const address = pathname.replace("/escrow/ongoing/", "");
@@ -166,11 +187,14 @@ export default function page() {
       // setShowSubmission(true);
       console.log(tx);
       notify_delete();
-      notify_success("Dispute Opened!")
+      notify_success("Dispute Opened!");
+
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
       console.log(e);
+    } finally {
+      setIsTerminating(false);
     }
   };
 
@@ -578,11 +602,11 @@ export default function page() {
                             />
                           </div>
                           <Button
-                            variant="contained"
-                            className="!text-xs !bg-second !px-4 !pb-2 !pt-3 !rounded-md !font-semibold !normal-case !text-white"
-                            onClick={() => submission()}
+                            onClick={submission}
+                            disabled={isSubmitting}
+                            className="!text-xs !bg-second !px-4 !py-2 disabled:!opacity-50"
                           >
-                            Submit
+                            {isSubmitting ? "Submitting..." : "Submit"}
                           </Button>
                         </Stack>
                       </Card>
@@ -632,10 +656,11 @@ export default function page() {
 
                       <Button
                         variant="contained"
-                        className="!text-xs sm:!text-sm !shadow-lg !px-4 !py-2 !rounded-md !bg-white !normal-case !text-second !w-56 !border !border-gray-200 hover:!bg-gray-50"
+                        className="!text-xs sm:!text-sm !shadow-lg !px-4 !py-2 !rounded-md !bg-white !normal-case !text-second !w-56 !border !border-gray-200 hover:!bg-gray-50 disabled:!opacity-50"
                         onClick={() => Tarminat()}
+                        disabled={isDisputing}
                       >
-                        Terminate
+                        {isDisputing ? "Terminating..." : "Terminate"}
                       </Button>
                     </Stack>
                   </motion.div>

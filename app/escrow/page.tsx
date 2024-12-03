@@ -15,11 +15,12 @@ import {
   useWallet,
 } from "@solana/wallet-adapter-react";
 import Image from "next/image";
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState, useCallback, useMemo } from "react";
 import { notify_delete, notify_error, notify_laoding, notify_success } from "../layout";
 import { backendApi } from "@/lib/utils/api.util";
 import { useRouter } from "next/navigation";
 import { EscrowResponse } from "@/lib/utils/api.util";
+import debounce from "lodash/debounce";
 
 export default function Page() {
   const [timeValue, setTimeValue] = useState("");
@@ -138,24 +139,22 @@ export default function Page() {
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const date = new Date(e.target.value);
     const milliseconds = date.getTime();
-    const formattedTime = formatTime(milliseconds);
     setTimeValue(e.target.value);
-    setForm((prevForm) => ({ ...prevForm, DeadLine: milliseconds / 1000 }));
-    console.log(
-      timeValue,
-      e.target.value,
-      date,
-      new Date(milliseconds),
-      formattedTime,
-      "time"
-    );
+    setForm((prevForm) => ({ 
+      ...prevForm, 
+      DeadLine: milliseconds / 1000 
+    }));
   };
 
+  const [isCreating, setIsCreating] = useState(false);
+
   const handleSubmit = async () => {
+    if (isCreating) return;
+    
     try {
-      console.log(form);
-      console.log(form.private);
-      notify_laoding("Creating Escrow Contract!!...!")
+      setIsCreating(true);
+      notify_laoding("Creating Escrow Contract...");
+
       await initEscrow(
         anchorWallet!,
         connection,
@@ -168,13 +167,16 @@ export default function Page() {
         form.private,
         wallet
       );
+      
       notify_delete();
-      notify_success("Escrow Contract Created Successfully!!")
+      notify_success("Escrow Contract Created!");
       router.push('/escrow/myescrow');
+
     } catch (e) {
       notify_delete();
-      notify_error("Transaction Failed!");      
-      console.log(e);
+      notify_error("Transaction Failed!");
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -187,20 +189,24 @@ export default function Page() {
     return deadline < now;
   };
 
-  // Modify the filteredEscrows to handle private contracts and add type checking
-  const filteredEscrows = escrows.filter(escrow => {
-    // Check if contract name matches search term
-    const nameMatches = escrow.contractName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Check if contract is not expired
-    const notExpired = !isContractExpired(escrow.deadline);
-    
-    // Check if contract is public (not private)
-    const isPublic = !escrow.private;
-    
-    // Return true only if all conditions are met
-    return nameMatches && notExpired && isPublic;
-  });
+  // Add debounced search
+  const debouncedSearch = useCallback(
+    debounce((term: string) => {
+      setSearchTerm(term);
+    }, 300),
+    []
+  );
+
+  // Optimize filtered escrows
+  const filteredEscrows = useMemo(() => 
+    escrows.filter(escrow => {
+      const nameMatches = escrow.contractName.toLowerCase().includes(searchTerm.toLowerCase());
+      const notExpired = !isContractExpired(escrow.deadline);
+      const isPublic = !escrow.private;
+      return nameMatches && notExpired && isPublic;
+    }),
+    [escrows, searchTerm]
+  );
 
   return (
     <div>
@@ -258,7 +264,7 @@ export default function Page() {
                         }))
                       }
                     }}
-                    className={`${inputStyle} w-full h-[48px] pt-[14px]`}
+                    className={`${inputStyle} w-full h-[48px] pt-[14px] pb-5`}
                     placeholder="E.g., Build a landing page"
                     maxLength={32}
                   />
@@ -282,7 +288,7 @@ export default function Page() {
                         TelegramLink: e.target.value,
                       }))
                     }
-                    className={`${inputStyle} w-full h-[48px] pt-[14px]`}
+                    className={`${inputStyle} w-full h-[48px] pt-[14px] pb-5`}
                     placeholder="E.g., https://example.tme.com"
                   />
                 </div>
@@ -293,7 +299,7 @@ export default function Page() {
                     type="date"
                     value={timeValue}
                     onChange={handleTimeChange}
-                    className={`${inputStyle} w-full h-[48px] pt-[14px]`}
+                    className={`${inputStyle} w-full h-[48px] pt-[14px] pb-5`}
                     placeholder="E.g., 2024-08-15"
                   />
                 </div>
@@ -313,7 +319,7 @@ export default function Page() {
                           Amount: Number(e.target.value),
                         }))
                       }
-                      className={`${inputStyle} w-full h-[48px] pt-[14px]`}
+                      className={`${inputStyle} w-full h-[48px] pt-[14px] pb-5`}
                       placeholder="Input USDC amount"
                     />
                     <div className="absolute right-4 top-[50%] translate-y-[-50%]">
@@ -333,7 +339,7 @@ export default function Page() {
                         Link: e.target.value,
                       }))
                     }
-                    className={`${inputStyle} w-full h-[48px] pt-[14px]`}
+                    className={`${inputStyle} w-full h-[48px] pt-[14px] pb-5`}
                     placeholder="E.g., https://example.figma.com"
                   />
                 </div>
@@ -359,12 +365,10 @@ export default function Page() {
             <Stack mt={3} alignItems="center">
               <Button
                 onClick={handleSubmit}
-                variant="contained"
-                type="submit"
-                disabled={isDisabled()}
-                className="!text-sm sm:!text-base !font-semibold !capitalize !bg-main !text-second !w-fit disabled:!bg-main/50 disabled:!text-second/50"
+                disabled={isDisabled() || isCreating}
+                className="!text-sm !font-semibold !capitalize !bg-main !text-second !w-fit disabled:!bg-main/50"
               >
-                Submit
+                {isCreating ? "Creating..." : "Submit"}
               </Button>
             </Stack>
           </Card>
@@ -381,7 +385,7 @@ export default function Page() {
                   <input
                     type="text"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => debouncedSearch(e.target.value)}
                     className="w-48 px-3 py-1 border rounded-l-md focus:outline-none"
                     placeholder="Search contracts..."
                     autoFocus

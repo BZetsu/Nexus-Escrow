@@ -1,4 +1,22 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Nexus Escrow Platform
+
+A decentralized escrow platform built on Solana for secure freelance contracts.
+
+## Features
+
+- Create and manage escrow contracts
+- Apply for freelance work
+- Secure payment system
+- Real-time contract status updates
+- Integrated chat functionality
+
+## Tech Stack
+
+- Next.js 14
+- Solana Web3.js
+- Material UI
+- TypeScript
+- Tailwind CSS
 
 ## Getting Started
 

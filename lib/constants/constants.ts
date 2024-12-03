@@ -23,3 +23,4 @@ export const sysvar_rant_pubkey: web3.PublicKey = new web3.PublicKey(
 export const auth_rule_program: web3.PublicKey = new web3.PublicKey(
   'auth9SigNpDKz4sJJ1DfCTuZrZNSAgh9sFD3rboVmgg',
 );
+export const PROGRAM_ID = new web3.PublicKey("3GKGywaDKPQ6LKXgrEvBxLAdw6Tt8PvGibbBREKhYDfD");

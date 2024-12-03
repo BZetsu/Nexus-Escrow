@@ -200,9 +200,13 @@ export default function page() {
     }
   }, [userInfo]);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const onSubmit = async () => {
+    if (isSubmitting) return;
+    
     try {
-      setIsSaving(true);
+      setIsSubmitting(true);
       notify_laoding("Updating Profile...");
 
       const res = await update_user(
@@ -240,38 +244,23 @@ export default function page() {
       notify_error("Profile Update Failed!");
       console.log(e);
     } finally {
-      setIsSaving(false);
+      setIsSubmitting(false);
     }
   };
 
   const output = (value: string | undefined | null, name: string) => {
-    console.log(name);
-    console.log(value);
-    
-    // Special handling for payment rate
     if (name === "Payment Rate") {
       return value || "0";
     }
     
-    // Normal handling for other fields
-    if (value && value.length > 0) {
-      return value;
-    }
-    return name;
+    return value && value.length > 0 ? value : name;
   };
 
   const stringLengthHandle = (string: string) => {
-    console.log("stringLengthHandle");
-    console.log(string);
     if (string && string.length > 25) {
-      return (
-        string.slice(0, 20) +
-        "..." +
-        string.slice(string.length - 4, string.length)
-      );
-    } else {
-      return string;
+      return string.slice(0, 20) + "..." + string.slice(string.length - 4);
     }
+    return string;
   };
 
   const updateImageInDatabase = async (newImageUrl: string) => {
