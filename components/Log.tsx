@@ -42,14 +42,12 @@ export default function Log() {
           </div>
           <div>
             <span className="text-[#858585]">and</span>{" "}
-            <span>Financial Activities</span>
+            <span>Financial Activities</span>{" "}
+            <span className="text-[#858585]">of</span>
           </div>
           <div>
-            <span className="text-[#858585]">of</span>{" "}
             <span>Web3 businesses</span>{" "}
-            <span className="text-[#858585]">and</span>
-          </div>
-          <div>
+            <span className="text-[#858585]">and</span>{" "}
             <span>Stakeholders</span>
           </div>
         </div>

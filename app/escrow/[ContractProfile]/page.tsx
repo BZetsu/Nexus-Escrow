@@ -136,44 +136,45 @@ export default function page() {
       );
 
       const databaseEscrowInfo = await backendApi.get<EscrowResponse>(`/escrow/${address}`);
-      const founderAddress = info?.founderInfo?.walletAddress || info?.founder?.toBase58();
+      const founderAddress = info.founder.toBase58();
       
-      if (founderAddress) {
-        const founderInfo = await backendApi.get<FounderResponse>(`/nexus-user/${founderAddress}`);
-        if (founderInfo?.data?.image) {
-          setFounderProfilePic(founderInfo.data.image);
+      try {
+        const response = await backendApi.get<{
+          data: Array<{
+            userId: string;
+            image: string;
+            name: string;
+            twitter?: string;
+          }>;
+        }>('/nexus-user');
+
+        const founderInfo = response.data.find(user => 
+          user.userId === founderAddress
+        );
+
+        if (founderInfo) {
+          info.founderInfo = {
+            ...founder_info,
+            name: founderInfo.name,
+            image: founderInfo.image || dragon.src,
+            twitter: founderInfo.twitter || ''
+          };
         }
+      } catch (error) {
+        console.error('Error fetching founder info:', error);
+        info.founderInfo = founder_info; // Fallback to blockchain data
       }
 
+      // Update these after the database fetch
       setEscrowDateInfo(databaseEscrowInfo.data);
-      info.founderInfo = founder_info;
       info.freelancer = freelancer_info;
       setEscrowInfo(info);
       setTelegram(freelancer_info?.telegramId || '');
-
-      if (founder_info?.name) {
-        await getFounderProfile(founder_info.name);
-      }
 
     } catch (e) {
       console.error('Error loading escrow info:', e);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const getFounderProfile = async (username: string) => {
-    try {
-      console.log("Fetching profile for username:", username);
-      const response = await backendApi.get<UserProfileResponse>(`/users/by-username/${username}`);
-      console.log("API Response:", response);
-      
-      if (response && response.data && response.data.profilePicture) {
-        console.log("Profile picture URL:", response.data.profilePicture);
-        setFounderProfilePic(response.data.profilePicture);
-      }
-    } catch (e) {
-      console.log("Error fetching founder profile:", e);
     }
   };
 

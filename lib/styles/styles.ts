@@ -2,29 +2,18 @@ export const cardStyle =
   "px-5 !py-3 rounded-md text-textColor bg-white text-xs sm:text-sm";
 
 export const inputStyle = `
-  block 
-  flex-1 
+  w-full 
+  rounded-xl 
+  bg-white 
   border 
-  border-black/60 
-  bg-transparent 
-  px-8 
-  py-1
-  text-gray-500
-  placeholder:text-gray-150/5
-  placeholder:translate-y-4
-  placeholder:pl-0.5
+  border-gray-200
+  px-4 
+  py-2 
   outline-none 
-  text-xs 
-  sm:text-sm 
-  sm:leading-6 
-  rounded-md 
-  shadow-[0_1px_2px_0px_rgba(0,0,0,0.05)]
-  ring-1 
-  ring-inset 
-  ring-gray-300 
-  focus:ring-2 
-  focus:ring-inset 
-  focus:ring-indigo-600
+  transition-all 
+  duration-200
+  hover:border-gray-300 
+  focus:border-gray-400
 `;
 
 export const inputMuiFontSize = {

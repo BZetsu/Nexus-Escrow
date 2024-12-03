@@ -86,15 +86,33 @@ export default function page() {
 
   const getUserData = async (userId: string) => {
     try {
-      const response = await backendApi.get<{data: any[]}>(`/nexus-user`);
-      if (response && response.data) {
-        const userData = response.data.find((user: any) => user.userId === userId);
+      const response = await backendApi.get<{
+        data: Array<{
+          userId: string;
+          name: string;
+          image: string;
+          twitter?: string;
+          isVerified?: boolean;
+        }>;
+      }>('/nexus-user');
+
+      if (response?.data) {
+        // Find user by userId (which is the founder's address)
+        const userData = response.data.find(user => 
+          user.userId === escrow_info?.founder?.toBase58()
+        );
+
         if (userData) {
-          setUserData(userData);
+          setUserData({
+            ...userData,
+            image: userData.image || dragon.src,
+            twitter: userData.twitter || '',
+            isVerified: userData.isVerified || false
+          });
         }
       }
     } catch (e) {
-      console.log(e);
+      console.error('Error fetching user data:', e);
     }
   };
 

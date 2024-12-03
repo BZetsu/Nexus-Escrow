@@ -249,7 +249,7 @@ export default function FirstForm({ handleGoToStep }: any) {
               >
                 Username
               </label>
-              <div className="mt-1 flex flex-col gap-1">
+              <div className="mt-2 flex flex-col gap-1">
                 <div className="flex rounded-md shadow-sm sm:max-w-md relative">
                   <input
                     {...register("username")}
@@ -265,11 +265,11 @@ export default function FirstForm({ handleGoToStep }: any) {
                   {watchedUsername && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       {isCheckingUsername ? (
-                        <span className="text-gray-400 text-[9.3px]">Checking...</span>
+                        <span className="mt-2 text-gray-400 text-[9.3px]">Checking...</span>
                       ) : !isUsernameAvailable ? (
-                        <span className="text-red-500 text-[9.3px]">Username taken, try another</span>
+                        <span className="mt-2 text-red-500 text-[9.3px]">Username taken, try another</span>
                       ) : (
-                        <span className="text-green-500 text-[9.3px]">Available</span>
+                        <span className="mt-2text-green-500 text-[9.3px]">Available</span>
                       )}
                     </div>
                   )}
@@ -288,7 +288,7 @@ export default function FirstForm({ handleGoToStep }: any) {
               >
                 Twitter Profile
               </label>
-              <div className="mt-1 flex flex-col gap-1">
+              <div className="mt-2 flex flex-col gap-1">
                 <div className="flex rounded-md shadow-sm sm:max-w-md">
                   <input
                     {...register("twitterProfile")}
@@ -314,7 +314,7 @@ export default function FirstForm({ handleGoToStep }: any) {
               >
                 Email Address
               </label>
-              <div className="mt-1 flex flex-col gap-1">
+              <div className="mt-2 flex flex-col gap-1">
                 <div className="flex rounded-md shadow-sm sm:max-w-md">
                   <input
                     {...register("email")}
