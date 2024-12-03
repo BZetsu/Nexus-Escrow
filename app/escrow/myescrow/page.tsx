@@ -171,113 +171,104 @@ export default function page() {
   }, [escrows, showPastContracts]);
 
   return (
-    <div className="w-[94vw] max-w-[2000px] flex items-center justify-center px-1 sm:px-2 md:px-4">
-      <Card className="pb-10 mt-3 w-[98%] md:w-[95%] lg:w-[92%] max-w-[1800px] px-5 sm:px-8">
+    <Card 
+      className="pb-10 mt-3 w-[95%] sm:w-[90%] max-w-[2000px] mx-auto px-1 sm:px-3 md:px-6 flex flex-col items-center"
+    >
+      <Stack
+        flexDirection="row"
+        justifyContent="space-between"
+        alignItems="center"
+        className="text-textColor text-xs w-full"
+      >
         <Stack
-          flexDirection="row"
-          justifyContent="space-between"
-          alignItems="start"
-          className="text-textColor text-xs"
-          
+          gap={1.8}
+          className="text-sm sm:text-base text-textColor !flex-row !items-center"
         >
-          <Stack
-            gap={1.8}
-            className="text-sm sm:text-base text-textColor sm:!flex-row !items-start"
-          >
-            <motion.button
-              className="disabled:text-black"
-              onClick={() => {
-                setOpenContracts(true);
-                setShowPastContracts(false);
-              }}
-              disabled={openContracts && !showPastContracts}
-            >
-              My Open contracts
-            </motion.button>
-
-            <motion.button
-              className="disabled:text-black"
-              onClick={() => {
-                setOpenContracts(false);
-                setShowPastContracts(false);
-              }}
-              disabled={!openContracts && !showPastContracts}
-            >
-              Disputes
-            </motion.button>
-          </Stack>
           <motion.button
-            className={`pt-[3px] cursor-pointer ${showPastContracts ? 'text-black' : ''}`}
-            onClick={() => setShowPastContracts(!showPastContracts)}
+            className="disabled:text-black"
+            onClick={() => {
+              setOpenContracts(true);
+              setShowPastContracts(false);
+            }}
+            disabled={openContracts && !showPastContracts}
           >
-            View past contracts
+            My Open contracts
+          </motion.button>
+
+          <motion.button
+            className="disabled:text-black"
+            onClick={() => {
+              setOpenContracts(false);
+              setShowPastContracts(false);
+            }}
+            disabled={!openContracts && !showPastContracts}
+          >
+            Disputes
           </motion.button>
         </Stack>
+        <motion.button
+          className={`pt-[3px] cursor-pointer ${showPastContracts ? 'text-black' : ''}`}
+          onClick={() => setShowPastContracts(!showPastContracts)}
+        >
+          View past contracts
+        </motion.button>
+      </Stack>
 
-        <Stack spacing={2.8} mt={3}>
-          {escrows && (
-            showPastContracts ? 
-              // Show completed and terminated contracts
-              escrows
-                .filter(shouldShowContract)  // Apply our new filter
-                .map((el, i) => {
-                  // Determine status text
-                  const status = 
-                    el.completed === 1 || el.status === 6 || el.status === 7 ? "Ended" :
-                    el.status === 3 ? "Work Approved" :
-                    "Ended";  // fallback
-
-                  return (
-                    <CardContract
-                      key={i}
-                      contractName={el.contractName}
-                      amount={Number(el.amount)}
-                      deadline={Number(el.deadline)}
-                      escrow={el.pubkey.toBase58()}
-                      createdAt={el.createdAt}
-                      status={status}
-                      type={1}
-                      className="w-full p-5 sm:p-8"
-                    />
-                  );
-                })
-            : openContracts ?
-              // Show only active contracts (not disputes, completed, or terminated)
-              escrows
-                .filter((es) => es.status < 5 && es.status !== 3)  // Keep all active contracts including status 1 (Contract Started)
-                .map((el, i) => (
-                  <CardContract
-                    key={i}
-                    contractName={el.contractName}
-                    amount={Number(el.amount)}
-                    deadline={Number(el.deadline)}
-                    escrow={el.pubkey.toBase58()}
-                    createdAt={el.createdAt}
-                    status={el.status}
-                    type={1}
-                    className="w-full p-5 sm:p-8"
-                  />
-                ))
-            :
-              // Show only disputes
-              escrows
-                .filter((es) => es.status === 5)
-                .map((el, i) => (
-                  <CardContract
-                    key={i}
-                    contractName={el.contractName}
-                    amount={Number(el.amount)}
-                    deadline={Number(el.deadline)}
-                    escrow={el.pubkey.toBase58()}
-                    createdAt={el.createdAt}
-                    status={el.status}
-                    type={1}
-                    className="w-full p-5 sm:p-8"
-                  />
-                ))
-          )}
-        </Stack>
-      </Card>
-    </div>
+      <Stack spacing={2.8} mt={3} className="w-full">
+        {escrows && (
+          showPastContracts ? 
+            // Show completed and terminated contracts
+            escrows
+              .filter(shouldShowContract)
+              .map((el, i) => (
+                <CardContract
+                  key={i}
+                  contractName={el.contractName}
+                  amount={Number(el.amount)}
+                  deadline={Number(el.deadline)}
+                  escrow={el.pubkey.toBase58()}
+                  createdAt={el.createdAt}
+                  status={status}
+                  type={1}
+                  className="w-full p-5 sm:p-8 block"
+                />
+              ))
+          : openContracts ?
+            // Show only active contracts (not disputes, completed, or terminated)
+            escrows
+              .filter((es) => es.status < 5 && es.status !== 3)  // Keep all active contracts including status 1 (Contract Started)
+              .map((el, i) => (
+                <CardContract
+                  key={i}
+                  contractName={el.contractName}
+                  amount={Number(el.amount)}
+                  deadline={Number(el.deadline)}
+                  escrow={el.pubkey.toBase58()}
+                  createdAt={el.createdAt}
+                  status={el.status}
+                  type={1}
+                  className="w-full p-5 sm:p-8"
+                />
+              ))
+          :
+            // Show only disputes
+            escrows
+              .filter((es) => es.status === 5)
+              .map((el, i) => (
+                <CardContract
+                  key={i}
+                  contractName={el.contractName}
+                  amount={Number(el.amount)}
+                  deadline={Number(el.deadline)}
+                  escrow={el.pubkey.toBase58()}
+                  createdAt={el.createdAt}
+                  status={el.status}
+                  type={1}
+                  className="w-full p-5 sm:p-8"
+                />
+              ))
+        )}
+      </Stack>
+    </Card>
   );
 }

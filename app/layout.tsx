@@ -11,6 +11,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { toast, ToastContainer } from "react-toastify";
 import { web3 } from "@project-serum/anchor";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Inter } from 'next/font/google'
+import { Analytics } from "@vercel/analytics/react"
 
 export  const links = (link: string) => {
   if (link.length > 0) {
@@ -51,6 +53,8 @@ export const notify_delete_id = (id: any) => {
   return toast.dismiss(id);
 };
 
+const inter = Inter({ subsets: ['latin'] })
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -62,7 +66,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
       </head>
-      <body className="font-inter">
+      <body className={inter.className}>
         <AppWalletProvider>
           <MuiTheme>
             <TopNavbar />
@@ -73,6 +77,7 @@ export default function RootLayout({
           </MuiTheme>
         </AppWalletProvider>
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );

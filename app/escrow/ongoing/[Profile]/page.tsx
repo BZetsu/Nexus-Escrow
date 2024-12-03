@@ -28,6 +28,8 @@ import { timeLeft } from "@/lib/utils/time_formatter";
 import { backendApi } from "@/lib/utils/api.util";
 import ApproveModal from "@/components/ApproveModal";
 import { IoMdClose } from "react-icons/io";
+import { MdVerified } from "react-icons/md";
+import CountdownTimer from "@/components/CountdownTimer";
 
 interface EscrowData {
   data: Array<{
@@ -414,21 +416,17 @@ export default function page() {
                 gap={2}
               >
                 <div className="flex items-center gap-2">
-                  <div className={`transition-colors ${
-                    !escrow_info?.private ? 'text-black font-semibold' : 'text-gray-500'
-                  }`}>
-                    {escrow_info?.private ? "Private" : "Public"}
+                  <div className="text-black font-semibold">
+                    Private
                   </div>
-                  <div className={`w-2 h-2 rounded-full ${
-                    escrow_info?.private ? 'bg-red-500' : 'bg-green-500'
-                  } -translate-y-0.5`} />
+                  <div className="w-2 h-2 rounded-full bg-red-500 -translate-y-0.5" />
                 </div>
                 <div className="flex flex-col space-y-2">
                   <div className="text-xs text-textColor font-myanmar">
                     Deadline
                   </div>
                   <div className="text-base font-semibold line-clamp-1 font-myanmar">
-                    {deadline}
+                    <CountdownTimer deadline={escrow_info.deadline} />
                   </div>
                 </div>
               </Stack>
@@ -467,12 +465,10 @@ export default function page() {
                     </div>
                     <span
                       onClick={() => links(escrow_info?.founderInfo?.twitter)}
-                      className="flex items-center cursor-pointer hover:text-blue-500 transition-colors duration-200"
+                      className="flex items-center cursor-pointer hover:text-blue-500 transition-colors duration-200 -mt-1"
                     >
                       <XIcon className="text-xl sm:text-3xl" />
-                      <div className="text-[8px] sm:text-[10px] text-gray-500 ml-1">
-                        (Verified)
-                      </div>
+                      <MdVerified className="text-gray-400 ml-1 text-lg translate-y-[2px]" />
                     </span>
                   </div>
                 </div>
@@ -543,25 +539,13 @@ export default function page() {
 
                 {escrow_info && applyInfo && escrow_info.status === 3 &&
                   <div className="flex gap-2 mt-4">
-                    <div 
-                      onClick={() => links(escrow_info?.materials)}
-                      className="w-fit cursor-pointer"
-                    >
-                      <Card className="!py-2 !px-2 grid place-content-center hover:scale-105 transition-transform duration-200">
-                        <CiFileOn className="text-6xl mx-auto" />
-                        <div className="text-xs mt-1">
-                          Link to Resources
-                        </div>
-                      </Card>
-                    </div>
                     <div className="w-full">
                       <Card className="text-xs text-center !shadow-none !border !border-textColor">
-                      Your submission was approved and pay has been made to your wallet
-                        {/* Your submission was approved and pay has been made to your
-                  wallet, project will auto terminate in 24 hours */}
+                        Your submission was approved and pay has been made to your wallet
                       </Card>
                     </div>
-                  </div>}
+                  </div>
+                }
                 {escrow_info && applyInfo && !escrow_info.reciever && (
                   <div className="flex gap-2 mt-4 px-4 pb-4">
                     <div className="w-full flex flex-col">

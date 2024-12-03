@@ -1,17 +1,15 @@
 "use client";
 
 import { CardType } from "@/lib/types/types";
-import { Container } from "@mui/material";
 import React from "react";
 
-export default function Card({ children, className, width = "sm" }: CardType) {
+export default function Card({ children, className }: CardType) {
   return (
-    <Container
-      maxWidth={width}
+    <div
       className={`p-5 bg-white rounded-lg shadow-md text-black ${className}`}
       style={{ boxShadow: "0px 4px 20px 0px #0000001A" }}
     >
       {children}
-    </Container>
+    </div>
   );
 }

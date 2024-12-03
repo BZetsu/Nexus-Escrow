@@ -12,7 +12,7 @@ import {
   useWallet,
 } from "@solana/wallet-adapter-react";
 import { motion } from "framer-motion";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { closeApply } from "@/lib/NexusProgram/escrow/FreelancercloseApply";
 import { web3 } from "@project-serum/anchor";
@@ -27,14 +27,33 @@ interface EscrowInfo {
 export default function page() {
   const [pendingEscrow, setPendingEscrow] = useState<any[]>();
   const [ongoingEscrow, setOngoingEscrow] = useState<any[]>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const anchorWallet = useAnchorWallet();
   const wallet = useWallet();
   const { connection } = useConnection();
   const router = useRouter();
 
+  const handleContractClick = useCallback(async (e: React.MouseEvent, path: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isNavigating) return;
+    
+    try {
+      setIsNavigating(true);
+      await router.push(path);
+    } catch (error) {
+      console.error('Navigation failed:', error);
+    } finally {
+      setTimeout(() => setIsNavigating(false), 500);
+    }
+  }, [router, isNavigating]);
+
   const getPendingEscrow = async () => {
     try {
+      setIsLoading(true);
       const pending = await getApplyFreelancer(anchorWallet, connection, "confirmed");
       const data = await backendApi.get(`/freelancer?freelancerAddress=${pending[0].user.toBase58()}`);
       
@@ -58,12 +77,15 @@ export default function page() {
       });
       setPendingEscrow(pending.filter((p) => (p.status != "Success" && p.status != "Rejected")));
     } catch (e) {
-      console.log(e);
+      console.error('Error fetching pending escrow:', e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const getOngoingEscrow = async () => {
     try {
+      setIsLoading(true);
       const ongoing = await getFreeLacerEscrow(anchorWallet, connection, "confirmed");
       const databaseEscrowInfo = await backendApi.get(`/escrow`);
       
@@ -104,7 +126,9 @@ export default function page() {
       const sortedOngoing = ongoingWithTimestamps.sort((a, b) => b.createdAt - a.createdAt);
       setOngoingEscrow(sortedOngoing);
     } catch (e) {
-      console.log(e);
+      console.error('Error fetching ongoing escrow:', e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -178,21 +202,29 @@ export default function page() {
           </div>
           <Stack mt={4} spacing={2.8}>
             {value === 0 ? (
-              // Ongoing Contracts - force "Contract Started" status
-              ongoingEscrow?.filter(es => es.reciever && es.status !== 5)
-                .map((el, i) => (
-                  <CardContract
-                    key={i}
-                    contractName={el.contractName}
-                    amount={Number(el.amount)}
-                    deadline={Number(el.deadline)}
-                    escrow={el.pubkey.toBase58()}
-                    createdAt={el.createdAt}
-                    status={1}
-                    type={3}
-                    onClick={() => router.push(`/escrow/ongoing/profile/${el.pubkey.toBase58()}`)}
-                  />
-                ))
+              // Ongoing Contracts - exclude approved (status 3) contracts
+              ongoingEscrow?.filter(es => 
+                es.reciever && 
+                es.status !== 5 && // not in dispute
+                es.status !== 3 && // not approved
+                es.status !== 6 && // not completed
+                es.status !== 7    // not terminated
+              )
+              .map((el, i) => (
+                <CardContract
+                  key={i}
+                  contractName={el.contractName}
+                  amount={Number(el.amount)}
+                  deadline={Number(el.deadline)}
+                  escrow={el.pubkey.toBase58()}
+                  createdAt={el.createdAt}
+                  status="Private"
+                  type={3}
+                  onClick={(e: React.MouseEvent) => handleContractClick(e, `/escrow/ongoing/profile/${el.pubkey.toBase58()}`)}
+                  disabled={isNavigating}
+                  className={isNavigating ? 'opacity-50' : ''}
+                />
+              ))
             ) : value === 1 ? (
               // Disputes
               ongoingEscrow?.filter(es => es.status === 5)
@@ -209,20 +241,28 @@ export default function page() {
                   />
                 ))
             ) : (
-              // Past Contracts
-              ongoingEscrow?.filter(es => es.status === 6 || es.status === 7)
-                .map((el, i) => (
-                  <CardContract
-                    key={i}
-                    contractName={el.contractName}
-                    amount={Number(el.amount)}
-                    deadline={Number(el.deadline)}
-                    escrow={el.pubkey.toBase58()}
-                    createdAt={el.createdAt}
-                    status={el.status === 6 ? "Completed" : "Terminated"}
-                    type={3}
-                  />
-                ))
+              // Past Contracts - include approved (status 3) contracts
+              ongoingEscrow?.filter(es => 
+                es.status === 6 || 
+                es.status === 7 || 
+                es.status === 3  // Include approved contracts in past contracts
+              )
+              .map((el, i) => (
+                <CardContract
+                  key={i}
+                  contractName={el.contractName}
+                  amount={Number(el.amount)}
+                  deadline={Number(el.deadline)}
+                  escrow={el.pubkey.toBase58()}
+                  createdAt={el.createdAt}
+                  status={
+                    el.status === 3 ? "Completed" :
+                    el.status === 6 ? "Completed" : 
+                    "Terminated"
+                  }
+                  type={3}
+                />
+              ))
             )}
           </Stack>
         </Card>

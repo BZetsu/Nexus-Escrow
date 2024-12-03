@@ -30,6 +30,7 @@
     "@vercel/analytics": "^1.4.1",
     "@vercel/speed-insights": "^1.1.0",
     "axios": "^1.7.3",
+    "critters": "^0.0.20",
     "framer-motion": "11.0.5",
     "next": "14.2.4",
     "react": "^18",
@@ -45,8 +46,7 @@
     "react-toastify": "^9.1.1",
     "sharp": "^0.33.5",
     "styled-components": "^6.1.13",
-    "zod": "^3.23.8",
-    "critters": "^0.0.20"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
@@ -59,6 +59,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18",
     "@types/react-select-country-list": "^2.2.3",
+    "autoprefixer": "^10.4.16",
     "babel-loader": "^9.2.1",
     "babel-plugin-styled-components": "^2.1.4",
     "crypto-browserify": "^3.12.1",
@@ -71,7 +72,6 @@
     "postcss": "^8.4.31",
     "stream-browserify": "^3.0.0",
     "tailwindcss": "^3.3.0",
-    "typescript": "^5",
-    "autoprefixer": "^10.4.16"
+    "typescript": "^5"
   }
 }

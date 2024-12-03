@@ -22,7 +22,7 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { FaDiscord, FaXTwitter } from "react-icons/fa6";
 import Link from 'next/link';
 
@@ -42,6 +42,7 @@ const nexusExploreMenu = [
     description: "Setup Secure Escrowed Freelance Contracts with contractors",
     isComingSoon: false,
     link: "/escrow",
+    prefetch: true
   },
   {
     name: "Nexus Payments",
@@ -156,6 +157,38 @@ export default function Example() {
     }
   };
 
+  // Add prefetching for faster navigation
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      nexusExploreMenu
+        .filter(item => item.prefetch)
+        .forEach(item => {
+          router.prefetch(item.link);
+        });
+    }
+  }, []);
+
+  // Optimize menu item click handler
+  const handleMenuItemClick = useCallback(async (link: string) => {
+    setShowMenu(false);
+    await router.push(link);
+  }, [router]);
+
+  // Update the mobile menu button handlers
+  const handleMobileMenuClick = useCallback(async (link: string) => {
+    if (link === '#' || !link || isNavigating) return;
+    
+    setIsNavigating(true);
+    try {
+      setShowMenu(false);
+      await router.push(link);
+    } catch (error) {
+      console.error('Navigation failed:', error);
+    } finally {
+      setIsNavigating(false);
+    }
+  }, [router, isNavigating]);
+
   return (
     <Disclosure as="nav" className="bg-second">
       {({ open }: DisclosureRenderProps) => (
@@ -220,10 +253,7 @@ export default function Example() {
                               {nexusExploreMenu.map((el, index) => (
                                 <button
                                   key={index}
-                                  onClick={() => {
-                                    setShowMenu(false);
-                                    router.push(el.link);
-                                  }}
+                                  onClick={() => handleMenuItemClick(el.link)}
                                   className="text-white disabled:text-white/30 text-start"
                                   disabled={el.isComingSoon}
                                 >
@@ -335,32 +365,6 @@ export default function Example() {
                             </Link>
                           )}
                         </Menu.Item>
-                        <Menu.Item>
-                          {({ active }) => (
-                            <a
-                              href="#"
-                              className={classNames(
-                                active ? "bg-gray-100" : "",
-                                "block px-4 py-2 text-sm text-gray-700"
-                              )}
-                            >
-                              Settings
-                            </a>
-                          )}
-                        </Menu.Item>
-                        <Menu.Item>
-                          {({ active }) => (
-                            <a
-                              href="#"
-                              className={classNames(
-                                active ? "bg-gray-100" : "",
-                                "block px-4 py-2 text-sm text-gray-700"
-                              )}
-                            >
-                              Sign out
-                            </a>
-                          )}
-                        </Menu.Item>
                       </Menu.Items>
                     </Transition>
                   </Menu>
@@ -403,8 +407,9 @@ export default function Example() {
                         {nexusExploreMenu.map((el, index) => (
                           <button
                             key={index}
-                            className="text-white disabled:text-white/30 text-start"
-                            disabled={el.isComingSoon}
+                            disabled={isNavigating || el.isComingSoon}
+                            className={`text-white ${isNavigating ? 'opacity-50' : ''} disabled:text-white/30 text-start w-full py-2`}
+                            onClick={() => handleMobileMenuClick(el.link)}
                           >
                             <div className="flex gap-4 items-center">
                               <div className="text-base">{el.name}</div>
@@ -414,7 +419,6 @@ export default function Example() {
                                 </div>
                               )}
                             </div>
-
                             <div className="mt-3 text-xs font-[300]">
                               {el.description}
                             </div>

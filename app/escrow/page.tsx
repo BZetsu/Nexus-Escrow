@@ -210,7 +210,7 @@ export default function Page() {
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 place-content-center w-full py-8 max-w-7xl mx-auto mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 place-content-center w-full py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <form onSubmit={(e) => e.preventDefault()}>
           <Card className="pb-6">
             <Stack flexDirection="row" justifyContent="space-between">
@@ -264,13 +264,13 @@ export default function Page() {
                         }))
                       }
                     }}
-                    className={`${inputStyle} w-full h-[48px] pt-[14px] pb-5`}
+                    className={`${inputStyle} w-[98%] h-[48px] pt-[14px] pb-5`}
                     placeholder="E.g., Build a landing page"
                     maxLength={32}
                   />
                   <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${
                     form.ContractName.length >= 28 ? 'text-red-500' : 'text-gray-400'
-                  }`}>
+                  } pr-3`}>
                     {form.ContractName.length}/32
                   </span>
                 </div>
@@ -319,7 +319,7 @@ export default function Page() {
                           Amount: Number(e.target.value),
                         }))
                       }
-                      className={`${inputStyle} w-full h-[48px] pt-[14px] pb-5`}
+                      className={`${inputStyle} w-[98%] h-[48px] pt-[14px] pb-5`}
                       placeholder="Input USDC amount"
                     />
                     <div className="absolute right-4 top-[50%] translate-y-[-50%]">
@@ -328,7 +328,7 @@ export default function Page() {
                   </div>
                 </div>
 
-                <div className="col-span-1 w-[102%]">
+                <div className="col-span-1 w-[100%]">
                   <label className="font-myanmar mb-1 block">Link to resources</label>
                   <input
                     type="text"
@@ -339,7 +339,7 @@ export default function Page() {
                         Link: e.target.value,
                       }))
                     }
-                    className={`${inputStyle} w-full h-[48px] pt-[14px] pb-5`}
+                    className={`${inputStyle} w-[100%] h-[48px] pt-[14px] pb-5`}
                     placeholder="E.g., https://example.figma.com"
                   />
                 </div>

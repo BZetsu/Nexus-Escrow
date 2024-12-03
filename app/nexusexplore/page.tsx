@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useContext } from "react";
-import EscrowImg from "@/public/web3-cryptocurrency-token-escrow-payment-contract 1.svg";
-import PaymentBackImg from "@/public/coins-payments-back-and-forth-between-two-devices 1.svg";
-import ProfessionalImg from "@/public/web3-professional-on-his-laptop 1.svg";
-import BusnessesImg from "@/public/web3-businesses-and-payrolls 1.svg";
+import { default as EscrowImg } from "@/public/web3-cryptocurrency-token-escrow-payment-contract 1.svg";
+import { default as PaymentBackImg } from "@/public/coins-payments-back-and-forth-between-two-devices 1.svg";
+import { default as ProfessionalImg } from "@/public/web3-professional-on-his-laptop 1.svg";
+import { default as BusnessesImg } from "@/public/web3-businesses-and-payrolls 1.svg";
 import Image from "next/image";
 import { Container, Stack } from "@mui/material";
 import { motion } from "framer-motion";

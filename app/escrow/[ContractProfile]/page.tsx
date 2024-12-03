@@ -31,6 +31,7 @@ import { IoMdClose } from "react-icons/io";
 import EditOutlined from "@mui/icons-material/EditOutlined";
 import { IconButton } from "@mui/material";
 import CountdownTimer from "@/components/CountdownTimer";
+import VerifiedIcon from '@mui/icons-material/Verified';
 
 interface UserProfileResponse {
   data: {
@@ -395,7 +396,9 @@ export default function page() {
         </div>
 
         <div className="grid sm:grid-cols-5 gap-4 mt-5">
-          <Card className="!p-0 sm:col-span-2 overflow-hidden h-[280px] sm:h-[520px]">
+          <Card 
+            className="!p-0 sm:col-span-2 overflow-hidden h-[320px] sm:h-[520px]"
+          >
             <div className="flex flex-col sm:flex-col p-2 sm:p-3 h-full">
               <Image
                 src={founderProfilePic || escrowInfo?.founderInfo?.image || dragon}
@@ -413,6 +416,9 @@ export default function page() {
               />
 
               <div className="mt-7 px-1">
+                <div className="text-xs text-gray-400 mb-2 font-medium">
+                  Contract Creator
+                </div>
                 <div className="border border-gray-200 rounded-xl px-4 py-4 flex items-center justify-between w-full">
                   <div className="text-base sm:text-xl font-[600] font-myanmarButton">
                     {escrowInfo ? escrowInfo.founderInfo.name : "--"}
@@ -424,9 +430,12 @@ export default function page() {
                     >
                       <XIcon className="text-xl" />
                     </span>
-                    <div className="text-[10px] text-gray-500">
-                      (Not Verified)
-                    </div>
+                    <span className="cursor-pointer">
+                      <VerifiedIcon 
+                        className={`text-lg ${escrowInfo?.isVerified ? 'text-blue-500' : 'text-gray-400'} 
+                        hover:text-blue-500 transition-colors`} 
+                      />
+                    </span>
                   </div>
                 </div>
               </div>

@@ -79,6 +79,7 @@ export default function page() {
   const [descriptionError, setDescriptionError] = useState("");
   const [copied, setCopied] = useState(false);
   const [select, setSelect] = useState<any>()
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const anchorWallet = useAnchorWallet();
   const { connection } = useConnection();
@@ -582,6 +583,18 @@ export default function page() {
     ]);
   };
 
+  const handleShare = async (type: 'link' | 'blinks') => {
+    if (type === 'link') {
+      const pageUrl = window.location.href;
+      await navigator.clipboard.writeText(pageUrl);
+      notify_success("Link copied to clipboard!");
+    } else {
+      // Handle Blinks generation here
+      notify_worning("Blinks generation coming soon!");
+    }
+    setShowShareModal(false);
+  };
+
   if (!anchorWallet || isLoading) {
     return <LoadingState />;
   }
@@ -594,13 +607,14 @@ export default function page() {
   return (
     <Suspense fallback={<LoadingState />}>
       <div>
-        <div className="max-w-6xl mx-auto pt-4">
-          <div className="flex items-center gap-3">
-            <Card width="lg">
+        <div className="max-w-7xl mx-auto pt-4">
+          <div className="flex items-center gap-3 w-full">
+            <Card width="lg" className="flex-1">
               <Stack
                 flexDirection="row"
                 alignItems="center"
                 justifyContent="space-between"
+                className="w-full"
               >
                 <Stack flexDirection="row" alignItems="start" gap={1}>
                   {isEditing ? (
@@ -636,7 +650,7 @@ export default function page() {
 
             <div
               className="bg-white rounded-xl p-5 h-full hidden sm:block cursor-pointer"
-              onClick={copyToClipboard}
+              onClick={() => setShowShareModal(true)}
             >
               <Image src={linksvg} alt="" className="w-[30px] py-[3px]" />
             </div>
@@ -1025,6 +1039,37 @@ export default function page() {
               </Button>
             </div>
           </div>
+        </Modal>
+
+        <Modal
+          open={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          className="grid place-items-center"
+        >
+          <Card className="w-[90%] max-w-md p-6">
+            <h3 className="text-lg font-semibold mb-4">Share Contract</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => handleShare('link')}
+                className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-3"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Share link to this contract
+              </button>
+              
+              <button
+                onClick={() => handleShare('blinks')}
+                className="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-3"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Generate Blinks
+              </button>
+            </div>
+          </Card>
         </Modal>
       </div>
     </Suspense>

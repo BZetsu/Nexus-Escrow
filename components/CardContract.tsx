@@ -117,9 +117,10 @@ export default function CardContract({
       whileHover={{ x: 5 }}
       whileTap={{ scale: 0.99 }}
       onClick={handleClick}
+      className="w-full block"
     >
       <div className={`p-5 border border-gray-300 rounded-md shadow-md w-full font-myanmar relative ${
-        path.slice(1, 16) === "escrow/myescrow" && "p-8"
+        path.includes("myescrow/") ? "p-8" : ""
       }`}>
         {status !== 0 && status !== 1 && (
           <div className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-pulse" 
@@ -127,7 +128,6 @@ export default function CardContract({
           </div>
         )}
         <div className="flex flex-col h-full justify-between">
-          {/* Top section */}
           <div className="flex justify-between items-start">
             <div>
               <div className="text-base sm:text-lg text-start line-clamp-1">
@@ -146,7 +146,6 @@ export default function CardContract({
                 </span>
               </div>
             </div>
-
             <div className="flex items-start gap-0.5">
               <div>
                 <Image src={coin} alt="coin" className="w-4 mt-1" />
@@ -156,26 +155,6 @@ export default function CardContract({
               </div>
             </div>
           </div>
-
-          {isPending && (
-            <div className="mt-4 text-center">
-              <div className="text-sm text-gray-600 mb-3">
-                Your Application has been sent
-              </div>
-              <Button
-                variant="contained"
-                className="!text-sm !px-8 !py-2 !capitalize !font-semibold !bg-second !mx-auto"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onCancelApply && onCancelApply(escrow.toString());
-                }}
-              >
-                Cancel Application
-              </Button>
-            </div>
-          )}
-
-          {/* Bottom section with timestamps */}
           <div className="flex justify-between items-end mt-4 text-[10px] text-textColor">
             <div className="text-[10px] text-textColor text-left">
               {getTimeAgo(createdAt)}

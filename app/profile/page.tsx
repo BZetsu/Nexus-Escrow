@@ -15,8 +15,6 @@ import dragon from "@/public/dragon.svg";
 import { motion } from "framer-motion";
 import { cardStyle, inputMuiFontSize, inputStyle } from "@/lib/styles/styles";
 import { profileOverview } from "@/lib/fakedata/Data";
-import TimeZoneInput from "@/components/TimeZoneInput";
-import CountryInput from "@/components/CountryInput";
 import ExpertiseLevelInput from "@/components/ExpertiseLevelInput";
 import { update_user } from "@/lib/user/update_user";
 import {
@@ -38,6 +36,8 @@ import { backendApi } from "@/lib/utils/api.util";
 import { getFreeLacerEscrow } from "@/lib/NexusProgram/escrow/utils.ts/getFreelacerEscrow";
 import XIcon from "@mui/icons-material/X";
 import VerifiedIcon from '@mui/icons-material/Verified';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import dynamic from 'next/dynamic';
 
 interface EditFormState {
   username: string;
@@ -58,6 +58,17 @@ interface EditFormState {
   website: string;
   linkedin: string;
 }
+
+// Dynamically import components
+const TimeZoneInput = dynamic(() => import("@/components/TimeZoneInput"), {
+  ssr: false,
+  loading: () => <div className="h-[48px] bg-gray-100 animate-pulse rounded" />
+});
+
+const CountryInput = dynamic(() => import("@/components/CountryInput"), {
+  ssr: false,
+  loading: () => <div className="h-[48px] bg-gray-100 animate-pulse rounded" />
+});
 
 export default function page() {
   const menu = ["Profile Summary", "Nexus Jobs", "Payment History"];
@@ -394,6 +405,20 @@ export default function page() {
                   priority
                   unoptimized
                 />
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  className="hidden"
+                  accept="image/*"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="absolute bottom-2 right-2 sm:hidden bg-white/80 hover:bg-white p-2 rounded-full shadow-md"
+                >
+                  <EditOutlinedIcon className="text-gray-700 text-xl" />
+                </button>
               </div>
             </div>
 

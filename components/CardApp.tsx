@@ -1,6 +1,6 @@
 "use client";
 
-import DragonImg from "@/public/dragon.jpg";
+import DefaultImg from "@/public/Image.jpg";
 import { Button, Stack } from "@mui/material";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -39,6 +39,7 @@ export default function CardApp({
   setSelect
 }: any) {
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -75,11 +76,30 @@ export default function CardApp({
     window.open(_link, "_blank");
   };
 
-  const handleProfileClick = () => {
-    if (data?.user) {
+  const handleProfileClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isNavigating || !data?.user) return;
+    
+    try {
+      setIsNavigating(true);
       const userAddress = data.user.toBase58();
       const escrowAddress = escrow.toBase58();
-      router.push(`/escrow/myescrow/${escrowAddress}/${userAddress}`);
+      
+      if (!userAddress || !escrowAddress) {
+        console.error('Invalid addresses:', { userAddress, escrowAddress });
+        return;
+      }
+
+      const profileUrl = `/escrow/myescrow/${escrowAddress}/${userAddress}`;
+      await router.push(profileUrl);
+      
+    } catch (error) {
+      console.error('Navigation error:', error);
+    } finally {
+      // Reset navigation state after a short delay
+      setTimeout(() => setIsNavigating(false), 500);
     }
   };
 
@@ -94,22 +114,31 @@ export default function CardApp({
         <Stack flexDirection="row" alignItems="start" gap={2}>
           <div className="relative w-20 h-20 overflow-hidden rounded-lg">
             <Image
-              src={userDetails?.image || DragonImg.src}
+              src={userDetails?.image || DefaultImg.src}
               alt={title || "Applicant"}
               fill
               className="object-cover object-center"
               priority
               sizes="80px"
               onError={(e: any) => {
-                console.log('Image load error, falling back to dragon image');
-                e.target.src = DragonImg.src;
+                console.log('Image load error, falling back to default image');
+                e.target.src = DefaultImg.src;
               }}
             />
           </div>
           <Stack spacing={1} alignItems="start" className="min-w-[120px] mt-1">
             <div 
               onClick={handleProfileClick}
-              className="text-base cursor-pointer font-[600] line-clamp-1 text-left hover:text-blue-600 transition-colors"
+              className={`text-base cursor-pointer font-[600] line-clamp-1 text-left hover:text-blue-600 transition-colors ${
+                isNavigating ? 'opacity-50' : ''
+              }`}
+              role="button"
+              tabIndex={0}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleProfileClick(e as any);
+                }
+              }}
             >
               {userDetails?.name || title}
             </div>
