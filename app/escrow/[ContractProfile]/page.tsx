@@ -324,6 +324,25 @@ export default function page() {
     handlePrivacyOnContractStart();
   }, [escrowInfo?.status]);
 
+  // Add this helper function after the component's state declarations
+  const formatTelegramLink = (input: string): string => {
+    // Remove any leading/trailing whitespace
+    let cleanInput = input.trim();
+    
+    // If it's already a full URL, return it
+    if (cleanInput.startsWith('https://t.me/')) {
+      return cleanInput;
+    }
+    
+    // Remove @ if present
+    if (cleanInput.startsWith('@')) {
+      cleanInput = cleanInput.substring(1);
+    }
+    
+    // Return formatted link
+    return `https://t.me/${cleanInput}`;
+  };
+
   if (isLoading) {
     return <div>Loading...</div>; // Or your loading component
   }
@@ -552,13 +571,16 @@ export default function page() {
 
             <div className="mt-10 w-full">
               <label className="block mb-2 text-sm font-medium">
-                Telegram Link for communication:
+                Telegram Username for communication:
               </label>
               <input
                 value={telegram}
                 className={`${inputStyle} w-full h-14 px-4 py-4 text-base border-2 ring-2 focus:ring-2 focus:ring-offset-2`}
-                onChange={(e) => setTelegram(e.target.value)}
-                placeholder="Enter your Telegram username or link"
+                onChange={(e) => {
+                  const formattedLink = formatTelegramLink(e.target.value);
+                  setTelegram(formattedLink);
+                }}
+                placeholder="E.g., @username or username"
               />
             </div>
 
