@@ -368,30 +368,36 @@ export default function page() {
           </Card>
 
           <Card className="!py-2 !px-4 col-span-1 sm:max-w-72">
-            <Stack
-              flexDirection="row"
-              justifyContent="space-between"
-              alignItems="center"
-              className="h-full min-h-[60px]"
-              gap={2}
-            >
-              <div className="text-sm font-[500] flex items-center gap-2">
-                <div className={`transition-colors ${
-                  !escrowDateInfo?.private ? 'text-black font-semibold' : 'text-gray-500'
-                }`}>
-                  {escrowDateInfo?.private ? "Private" : "Public"}
+            {escrowInfo && (
+              <Stack
+                flexDirection="row"
+                justifyContent="space-between"
+                alignItems="center"
+                className="h-full min-h-[60px]"
+                gap={2}
+              >
+                <div className="text-sm font-[500] flex items-center gap-2">
+                  <div className={`transition-colors ${
+                    !escrowDateInfo?.private ? 'text-black font-semibold' : 'text-gray-500'
+                  }`}>
+                    {escrowDateInfo?.private ? "Private" : "Public"}
+                  </div>
+                  <div className={`w-2 h-2 rounded-full ${
+                    escrowDateInfo?.private ? 'bg-red-500' : 'bg-green-500'
+                  } -translate-y-0.5`} />
                 </div>
-                <div className={`w-2 h-2 rounded-full ${
-                  escrowDateInfo?.private ? 'bg-red-500' : 'bg-green-500'
-                } -translate-y-0.5`} />
-              </div>
-              <div className="flex flex-col space-y-2">
-                <div className="text-xs text-textColor">Deadline</div>
-                <div className="flex items-center gap-2">
-                  <CountdownTimer deadline={escrowInfo.deadline} />
+                <div className="flex flex-col space-y-2">
+                  <div className="text-xs text-textColor">Deadline</div>
+                  <div className="flex items-center gap-2">
+                    {escrowInfo.deadline ? (
+                      <CountdownTimer deadline={escrowInfo.deadline} />
+                    ) : (
+                      <div className="text-base font-semibold">--</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </Stack>
+              </Stack>
+            )}
           </Card>
         </div>
 
