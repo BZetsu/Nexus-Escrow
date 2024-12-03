@@ -208,6 +208,25 @@ export default function Page() {
     [escrows, searchTerm]
   );
 
+  // Add this helper function after the component's state declarations
+  const formatTelegramLink = (input: string): string => {
+    // Remove any leading/trailing whitespace
+    let cleanInput = input.trim();
+    
+    // If it's already a full URL, return it
+    if (cleanInput.startsWith('https://t.me/')) {
+      return cleanInput;
+    }
+    
+    // Remove @ if present
+    if (cleanInput.startsWith('@')) {
+      cleanInput = cleanInput.substring(1);
+    }
+    
+    // Return formatted link
+    return `https://t.me/${cleanInput}`;
+  };
+
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 place-content-center w-full py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -282,18 +301,19 @@ export default function Page() {
                   <input
                     type="text"
                     value={form.TelegramLink}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const formattedLink = formatTelegramLink(e.target.value);
                       setForm((prevForm) => ({
                         ...prevForm,
-                        TelegramLink: e.target.value,
-                      }))
-                    }
+                        TelegramLink: formattedLink,
+                      }));
+                    }}
                     className={`${inputStyle} w-full h-[50px] pt-6 pb-5`}
-                    placeholder="E.g., https://example.tme.com"
+                    placeholder="E.g., @username or username"
                   />
                 </div>
 
-                <div className="col-span-1 w-[102%]">
+                <div className="col-span-1 w-[98%]">
                   <label className="font-myanmar mb-1 block">Deadline</label>
                   <input
                     type="date"
