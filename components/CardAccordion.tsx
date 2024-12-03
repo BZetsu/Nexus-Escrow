@@ -21,6 +21,7 @@ export default function CardAccordion({
   setSelect,
   font_size = "text-base",
   padding = undefined,
+  cardHeight = "h-[360px]",
 }: any) {
   const anchorWallet = useAnchorWallet();
   const wallet = useWallet();
@@ -44,7 +45,7 @@ export default function CardAccordion({
           </Stack>
         </Stack>
       </Card>
-      <Card className="rounded-t-none min-h-24 w-[98%] mx-auto h-[360px] escrow overflow-y-scroll">
+      <Card className={`rounded-t-none min-h-24 w-[98%] mx-auto ${cardHeight} escrow overflow-y-scroll`}>
         <Stack spacing={2}>
           {data.map((el: any, i: number) => (
             <CardApp

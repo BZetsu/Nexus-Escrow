@@ -37,6 +37,7 @@ export default function CardAccordionAccept({
   font_size = "text-base",
   escrowDateInfo,
   refreshData,
+  cardHeight,
 }: any) {
   const anchorWallet = useAnchorWallet();
   const wallet = useWallet();
@@ -173,7 +174,7 @@ export default function CardAccordionAccept({
           </Stack>
         </Stack>
       </Card>
-      <Card className="rounded-t-none min-h-24 w-[98%] mx-auto !px-0 h-[360px]">
+      <Card className={`rounded-t-none min-h-24 w-[98%] mx-auto !px-0 ${cardHeight || 'h-[360px]'}`}>
         <Stack spacing={2} className="escrow overflow-y-scroll px-5">
           {data.map((el: any, i: number) => (
             <CardAppAccept

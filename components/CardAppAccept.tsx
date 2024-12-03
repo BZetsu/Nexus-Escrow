@@ -5,7 +5,8 @@ import { Button, Stack } from "@mui/material";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { escape } from "querystring";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { backendApi } from "@/lib/utils/api.util";
 
 const links = (_link: string) => {
   window.open(_link, "_blank");
@@ -24,11 +25,32 @@ const getImageUrl = (info: any, escrowInfo: any) => {
 
   if (info?.user) {
     const userAddress = info.user.toBase58();
-    return `https://new-nexus-platform-backend.onrender.com/api/v1/bucket/upload/${userAddress}`;
+    return `https://new-nexus-platform-backend.onrender.com/api/v1/nexus-user`;
   }
 
   return DragonImg.src;
 };
+
+interface UserDetails {
+  name: string;
+  image: string;
+  roles: string[];
+  paymentRatePerHour?: number;
+  // add other fields as needed
+}
+
+// Add interface for API response
+interface ApiResponse {
+  data: {
+    data: Array<{
+      address: string;
+      name: string;
+      image: string;
+      roles: string[];
+      paymentRatePerHour: number;
+    }>;
+  };
+}
 
 export default function CardAppAccept({
   title,
@@ -44,7 +66,29 @@ export default function CardAppAccept({
 }: any) {
   const router = useRouter();
   const [imageLoaded, setImageLoaded] = useState(false);
-  
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
+
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      try {
+        if (data?.user) {
+          const response = await backendApi.get<ApiResponse>('/nexus-user');
+          const users = response.data.data;
+          const userDetail = users.find((user: any) => 
+            user.address === data.user.toBase58()
+          );
+          if (userDetail) {
+            setUserDetails(userDetail);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+      }
+    };
+
+    fetchUserDetails();
+  }, [data?.user]);
+
   // Add debug log
   console.log("CardAppAccept Full Data:", {
     data,
@@ -73,81 +117,63 @@ export default function CardAppAccept({
     userInfo: data?.userInfo
   });
 
-  return (
-    <Stack
-      flexDirection="row"
-      alignItems="center"
-      justifyContent="space-between"
-    >
-      <Stack flexDirection="row" alignItems="start" gap={1}>
-        <div className="relative w-20 h-14">
-          {!imageLoaded && (
-            <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg" />
-          )}
-          <Image
-            src={getImageUrl(data, escrowInfo)}
-            alt={title || "Applicant"}
-            width={80}
-            height={56}
-            className={`w-20 h-14 rounded-lg object-cover object-center transition-opacity duration-200 ${!imageLoaded ? 'opacity-0' : 'opacity-100'}`}
-            priority
-            unoptimized
-            onError={(e) => {
-              console.log("Image load error for:", e.currentTarget.src);
-              e.currentTarget.src = DragonImg.src;
-              setImageLoaded(true);
-            }}
-            onLoad={() => {
-              console.log("Image loaded successfully");
-              setImageLoaded(true);
-            }}
-          />
-        </div>
-        <Stack spacing={0.4} alignItems="start" className="min-w-[120px]">
-          <div
-            className="text-base cursor-pointer font-[600] line-clamp-1 text-left"
-            onClick={() => {
-              if (data?.user) {
-                const userAddress = data.user.toBase58();
-                const escrowAddress = escrow.toBase58();
-                console.log("Navigation:", { userAddress, escrowAddress });
-                router.push(`/escrow/myescrow/${escrowAddress}/${userAddress}`);
-              }
-            }}
-          >
-            {title}
-          </div>
-          <div className="text-xs text-gray-700 font-[400] line-clamp-1">
-            {data?.role || escrowInfo?.freelancerInfo?.roles?.[0] || "Developer"}
-          </div>
-        </Stack>
-      </Stack>
+  const handleProfileClick = () => {
+    if (data?.user) {
+      const userAddress = data.user.toBase58();
+      const escrowAddress = escrow.toBase58();
+      router.push(`/escrow/myescrow/${escrowAddress}/${userAddress}`);
+    }
+  };
 
-      <Button
-        onClick={() => links(chat)}
-        variant="contained"
-        className="!normal-case !text-[11px] !text-white !bg-second !px-5 !pt-2 !h-fit"
+  return (
+    <>
+      <Stack
+        flexDirection="row"
+        alignItems="center"
+        justifyContent="space-between"
+        className="py-5"
       >
-        {type}
-      </Button>
-      {/* {escrowInfo && escrowInfo.status == 9 && (
-        <>
-          <Button
-            onClick={() => approve()}
-            variant="contained"
-            className="!normal-case !text-xs !text-white !font-semibold !bg-second !px-5 !py-2 !h-fit"
-          >
-            Approve
-          </Button>
-          <Button
-            onClick={() => reject()}
-            variant="contained"
-            className="!normal-case !text-xs !text-white !font-semibold !bg-second !px-5 !py-2 !h-fit"
-          >
-            Reject
-          </Button>
-        </>
-      )} */}
-    </Stack>
+        <Stack flexDirection="row" alignItems="start" gap={3}>
+          <div className="relative w-20 h-20 overflow-hidden rounded-lg">
+            <Image
+              src={userDetails?.image || DragonImg.src}
+              alt={title || "Applicant"}
+              fill
+              className="object-cover object-center"
+              priority
+              sizes="80px"
+              onError={(e: any) => {
+                e.target.src = DragonImg.src;
+              }}
+            />
+          </div>
+          <Stack spacing={1} alignItems="start" className="min-w-[120px] mt-2">
+            <div
+              onClick={handleProfileClick}
+              className="text-base cursor-pointer font-[600] line-clamp-1 text-left hover:text-blue-600 transition-colors"
+            >
+              {userDetails?.name || title}
+            </div>
+            <div className="flex flex-col gap-0.5">
+              <div className="text-xs text-gray-700 font-[400] line-clamp-1">
+                {userDetails?.roles?.[0] || "Developer"}
+              </div>
+              <div className="text-[10px] text-red-500">
+                Twitter not verified
+              </div>
+            </div>
+          </Stack>
+        </Stack>
+
+        <Button
+          onClick={() => links(chat)}
+          variant="contained"
+          className="!normal-case !text-[11px] !text-white !bg-second !px-5 !pt-2 !h-fit"
+        >
+          {type}
+        </Button>
+      </Stack>
+      <div className="border-b border-gray-200" />
+    </>
   );
 }

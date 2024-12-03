@@ -144,10 +144,16 @@ export default function Example() {
   // Optimize profile navigation
   const handleProfileClick = async (e: React.MouseEvent) => {
     e.preventDefault();
-    if (isNavigating) return; // Prevent multiple clicks
+    if (isNavigating) return;
     
     setIsNavigating(true);
-    router.push('/profile');
+    try {
+      await router.push('/profile');
+    } catch (error) {
+      console.error('Navigation failed:', error);
+    } finally {
+      setIsNavigating(false); // Reset the navigation state
+    }
   };
 
   return (

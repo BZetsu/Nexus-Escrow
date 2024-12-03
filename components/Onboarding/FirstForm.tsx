@@ -83,16 +83,47 @@ export default function FirstForm({ handleGoToStep }: any) {
   const watchedTwitterProfile = watch("twitterProfile");
   const watchedEmail = watch("email");
 
+  // Add this function to check username availability
+  const checkUsernameAvailability = async (username: string) => {
+    try {
+      interface NexusUserResponse {
+        data: Array<{ name: string }>;
+      }
+      const response = await backendApi.get<NexusUserResponse>(`/nexus-user`);
+      const users = response.data;
+      
+      const exists = users.some(user => 
+        user.name?.toLowerCase() === username.toLowerCase()
+      );
+      
+      return !exists;
+    } catch (error) {
+      console.error('Error checking username:', error);
+      return true;
+    }
+  };
+
+  // Update the onSubmit handler
   const onSubmit: SubmitHandler<OnboardingScreenForm> = async (data) => {
     if (!isValid) return;
 
     const loadingToastId = notify_laoding("Creating Profile...!");
+    
     try {
+      // Check username availability before proceeding
+      const isUsernameAvailable = await checkUsernameAvailability(watchedUsername);
+      
+      if (!isUsernameAvailable) {
+        notify_delete(loadingToastId);
+        notify_error("Username already exists. Please choose another.");
+        return;
+      }
+
       await init_user(
         anchorWallet,
         connection,
         watchedUsername,
-        uploadedImageUrl, // use the uploaded image URL here
+        uploadedImageUrl,
         "",
         "",
         "",
@@ -109,9 +140,8 @@ export default function FirstForm({ handleGoToStep }: any) {
         wallet
       );
 
-      // Proceed to next step
       handleGoToStep("second");
-      notify_success("Profile Created Successfully!!");
+      notify_success("Welcome to Nexus!!");
       notify_delete(loadingToastId);
     } catch (e) {
       notify_delete(loadingToastId);
@@ -154,7 +184,7 @@ export default function FirstForm({ handleGoToStep }: any) {
           gap={3}
           className="flex-col md:!flex-row items-center sm:items-end pt-5"
         >
-          <div className="rounded-2xl bg-white relative w-[14rem] h-[14rem]">
+          <div className="rounded-2xl bg-white relative w-[14rem] h-[14rem] group">
             {imagePreview ? (
               <img
                 src={imagePreview}
@@ -162,9 +192,9 @@ export default function FirstForm({ handleGoToStep }: any) {
                 className="w-[230px] h-[230px] object-cover object-center rounded-2xl border border-white"
               />
             ) : (
-              <div className="border-2 h-[85%] mx-[1rem] mt-[1rem] border-dashed rounded m-auto flex flex-col items-center justify-center border-gray-300">
-                <CameraAltIcon className="text-[#F3F3F3] !text-[83px]  w-[5rem]" />
-                <p className="text-[#BABABA] text-sm">Upload Image</p>
+              <div className="border-2 h-[85%] mx-[1rem] mt-[1rem] border-dashed rounded m-auto flex flex-col items-center justify-center border-gray-300 transition-all duration-200 group-hover:border-gray-400 group-hover:bg-gray-50">
+                <CameraAltIcon className="text-[#F3F3F3] !text-[83px] w-[5rem] transition-transform duration-200 group-hover:scale-110" />
+                <p className="text-[#BABABA] text-sm group-hover:text-gray-600 transition-colors duration-200">Upload Image</p>
               </div>
             )}
             <input
@@ -172,24 +202,24 @@ export default function FirstForm({ handleGoToStep }: any) {
               accept="image/*"
               {...register("image")}
               onChange={handleImageChange}
-              className="absolute top-0 left-0 w-full h-full opacity-0 z-10"
+              className="absolute top-0 left-0 w-full h-full opacity-0 z-10 cursor-pointer"
             />
           </div>
           <div className="grid gap-4">
             <div className="sm:col-span-1">
               <label
                 htmlFor="username"
-                className="block text-sm font-medium leading-6 text-gray-900"
+                className="block text-sm font-semibold leading-5 text-gray-900 mb-1"
               >
                 Username
               </label>
-              <div className="mt-2 flex flex-col gap-1">
+              <div className="mt-1 flex flex-col gap-1">
                 <div className="flex rounded-md shadow-sm sm:max-w-md">
                   <input
                     {...register("username")}
                     type="text"
                     autoComplete="username"
-                    className="block bg-white rounded-md flex-1 border-0 py-2 px-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm sm:leading-6 min-w-[300px]"
+                    className="block bg-white rounded-md flex-1 border-0 py-1.5 px-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm sm:leading-6 min-w-[300px]"
                     placeholder=""
                   />
                 </div>
@@ -203,16 +233,16 @@ export default function FirstForm({ handleGoToStep }: any) {
             <div className="sm:col-span-1">
               <label
                 htmlFor="twitterProfile"
-                className="block text-sm font-medium leading-6 text-gray-900"
+                className="block text-sm font-semibold leading-5 text-gray-900 mb-1"
               >
                 Twitter Profile
               </label>
-              <div className="mt-2 flex flex-col gap-1">
+              <div className="mt-1 flex flex-col gap-1">
                 <div className="flex rounded-md shadow-sm sm:max-w-md">
                   <input
                     {...register("twitterProfile")}
                     type="text"
-                    className="block bg-white rounded-md flex-1 border-0 py-2 px-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm sm:leading-6"
+                    className="block bg-white rounded-md flex-1 border-0 py-1.5 px-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm sm:leading-6"
                     placeholder=""
                   />
                 </div>
@@ -226,16 +256,16 @@ export default function FirstForm({ handleGoToStep }: any) {
             <div className="sm:col-span-1">
               <label
                 htmlFor="email"
-                className="block text-sm font-medium leading-6 text-gray-900"
+                className="block text-sm font-semibold leading-5 text-gray-900 mb-1"
               >
                 Email Address
               </label>
-              <div className="mt-2 flex flex-col gap-1">
+              <div className="mt-1 flex flex-col gap-1">
                 <div className="flex rounded-md shadow-sm sm:max-w-md">
                   <input
                     {...register("email")}
                     type="email"
-                    className="block bg-white rounded-md flex-1 border-0 py-2 px-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm sm:leading-6"
+                    className="block bg-white rounded-md flex-1 border-0 py-1.5 px-4 text-gray-900 placeholder:text-gray-400 focus:ring-0 outline-none sm:text-sm sm:leading-6"
                     placeholder=""
                   />
                 </div>

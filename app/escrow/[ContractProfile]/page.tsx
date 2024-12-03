@@ -28,6 +28,9 @@ import { CiFileOn } from "react-icons/ci";
 import { FaFileAlt } from "react-icons/fa";
 import { FaFile } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
+import EditOutlined from "@mui/icons-material/EditOutlined";
+import { IconButton } from "@mui/material";
+import CountdownTimer from "@/components/CountdownTimer";
 
 interface UserProfileResponse {
   data: {
@@ -288,6 +291,33 @@ export default function page() {
   };
   const [showDescription, setShowDescription] = useState(false);
 
+  // Add this effect to handle automatic privacy switch
+  useEffect(() => {
+    const handlePrivacyOnContractStart = async () => {
+      if (escrowInfo && escrowInfo.status === 2 && !escrowDateInfo?.private) {
+        try {
+          const address = pathname.replace("/escrow/", "");
+          await backendApi.patch(`escrow/update/${address}`, {
+            deadline: Number(escrowInfo.deadline),
+            telegramLink: escrowInfo.telegramLink || "",
+            private: true,
+            description: escrowDateInfo?.description || ""
+          });
+          
+          // Update local state
+          setEscrowDateInfo((prev: any) => ({
+            ...prev,
+            private: true
+          }));
+        } catch (error) {
+          console.error("Failed to update privacy:", error);
+        }
+      }
+    };
+
+    handlePrivacyOnContractStart();
+  }, [escrowInfo?.status]);
+
   if (isLoading) {
     return <div>Loading...</div>; // Or your loading component
   }
@@ -296,14 +326,14 @@ export default function page() {
     <div>
       <div className="max-w-5xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-8">
-          <Card className=" !col-span-1 sm:!col-span-3" width="lg">
+          <Card className="!col-span-1 sm:!col-span-3 !p-3" width="lg">
             <Stack
               flexDirection="row"
               justifyContent="space-between"
               alignItems="center"
-              className="text-base sm:text-xl font-[600] pt-4"
+              className="text-base sm:text-xl font-[600] w-full pt-2"
             >
-              <div className="flex-1 text-base sm:text-3xl font-bold">
+              <div className="flex-1 text-base sm:text-2xl font-bold translate-y-1">
                 {escrowInfo && escrowInfo.contractName !== "" ? (
                   <span className="text-black">
                     {escrowInfo.contractName}
@@ -315,19 +345,28 @@ export default function page() {
                 )}
               </div>
 
-              <Stack flexDirection="row" alignItems="start" gap={0.4}>
-                <Image src={coin} alt="coin" className="w-5 mt-[1px]" />
-                <div>{escrowInfo ? Number(escrowInfo.amount) / 1000_000 : "--"}</div>
+              <Stack flexDirection="row" alignItems="center" gap={1}>
+                <div className="-translate-y-1">
+                  <Image 
+                    src={coin} 
+                    alt="coin" 
+                    className="w-6 h-6" 
+                    priority
+                  />
+                </div>
+                <div className="text-lg translate-y-0">
+                  {escrowInfo ? Number(escrowInfo.amount) / 1000_000 : "--"}
+                </div>
               </Stack>
             </Stack>
           </Card>
 
-          <Card className="!py-3 !px-4 col-span-1 sm:max-w-72">
+          <Card className="!py-2 !px-4 col-span-1 sm:max-w-72">
             <Stack
               flexDirection="row"
               justifyContent="space-between"
               alignItems="center"
-              className="h-full min-h-[80px]"
+              className="h-full min-h-[60px]"
               gap={2}
             >
               <div className="text-sm font-[500] flex items-center gap-2">
@@ -342,8 +381,8 @@ export default function page() {
               </div>
               <div className="flex flex-col space-y-2">
                 <div className="text-xs text-textColor">Deadline</div>
-                <div className="text-base font-semibold line-clamp-1">
-                  {countdown}
+                <div className="flex items-center gap-2">
+                  <CountdownTimer deadline={escrowInfo.deadline} />
                 </div>
               </div>
             </Stack>
@@ -358,7 +397,7 @@ export default function page() {
                 alt="profile"
                 width={500}
                 height={500}
-                className="w-[700px] h-[160px] sm:w-full sm:h-[350px] 
+                className="w-[700px] h-[140px] sm:w-full sm:h-[320px] 
                            rounded-xl object-cover 
                            px-2 sm:px-0
                            object-[center_75%] sm:object-center"
@@ -368,7 +407,7 @@ export default function page() {
                 }}
               />
 
-              <div className="mt-1 px-1 flex flex-col h-full">
+              <div className="mt-3 px-1">
                 <div className="border border-gray-200 rounded-xl px-4 py-2 flex items-center justify-between w-full">
                   <div className="text-base sm:text-xl font-[600] font-myanmarButton">
                     {escrowInfo ? escrowInfo.founderInfo.name : "--"}
@@ -385,39 +424,38 @@ export default function page() {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className="flex justify-center mt-auto mb-4">
-                  <Button
-                    onClick={() => {
-                      if (escrowInfo && escrowDateInfo) {
-                        const telegramLink = escrowDateInfo.telegramLink;
-                        if (telegramLink) {
-                          let link = telegramLink;
-                          if (!link.includes('.') && !link.startsWith('@') && !link.includes('t.me')) {
-                            link = `https://t.me/${link}`;
-                          }
-                          else if (!link.startsWith('http://') && !link.startsWith('https://')) {
-                            link = `https://${link}`;
-                          }
-                          window.open(link, '_blank');
+              <div className="flex justify-center mt-4">
+                <Button
+                  onClick={() => {
+                    if (escrowInfo && escrowDateInfo) {
+                      const telegramLink = escrowDateInfo.telegramLink;
+                      if (telegramLink) {
+                        let link = telegramLink;
+                        if (!link.includes('.') && !link.startsWith('@') && !link.includes('t.me')) {
+                          link = `https://t.me/${link}`;
                         }
+                        else if (!link.startsWith('http://') && !link.startsWith('https://')) {
+                          link = `https://${link}`;
+                        }
+                        window.open(link, '_blank');
                       }
-                    }}
-                    variant="contained"
-                    className="!text-[10px] sm:!text-sm !font-semibold !capitalize !bg-second !py-2 w-full sm:w-fit sm:!px-12"
-                  >
-                    Start Chat
-                  </Button>
-                </div>
+                    }
+                  }}
+                  variant="contained"
+                  className="!text-[10px] sm:!text-sm !font-semibold !capitalize !bg-second !py-2 w-full sm:w-fit sm:!px-12"
+                >
+                  Start Chat
+                </Button>
               </div>
             </div>
           </Card>
 
           <div className="sm:col-span-3 flex flex-col gap-4">
-            <Card width="lg" className="h-72">
+            <Card width="lg" className="h-[320px]">
               <div className="text-xs text-textColor">Description</div>
-
-              <div className=" mt-3">
+              <div className="mt-3">
                 <div
                   className="line-clamp-5 text-5 text-[12px] leading-7 cursor-pointer h-14"
                   onClick={() => setShowDescription(true)}
@@ -429,9 +467,9 @@ export default function page() {
               </div>
             </Card>
 
-            <Card className="flex-1 h-[250px]">
+            <Card className="flex-1 h-[160px]">
               <Button
-                className="!mt-4 !mb-4 w-full !bg-white hover:bg-opacity-0 shadow-none !normal-case border border-gray-300"
+                className="!mt-2 !mb-2 w-full !bg-white hover:bg-opacity-0 shadow-none !normal-case border border-gray-300"
                 style={{ display: "unset" }}
               >
                 <span onClick={() => links(escrowInfo.materials)}>
@@ -445,7 +483,7 @@ export default function page() {
               </Button>
 
               {!applyInfo ? (
-                <div className="flex justify-center">
+                <div className="flex justify-center mt-6">
                   <Button
                     variant="contained"
                     onClick={handleOpenModal}
@@ -455,7 +493,7 @@ export default function page() {
                   </Button>
                 </div>
               ) : (
-                <div className="flex justify-center h-[60px] items-end pb-4">
+                <div className="flex justify-center h-[50px] items-end mt-6">
                   <Button
                     variant="contained"
                     onClick={() => cancel_apply()}
@@ -491,11 +529,23 @@ export default function page() {
             </div>
 
             <div className="mt-10 w-full">
-              <label>Telegram Link for communication:</label>
+              <label className="block mb-2 text-sm font-medium">Telegram Link for communication:</label>
               <input
                 value={telegram}
-                className={`${inputStyle} w-full`}
+                className={`
+                  ${inputStyle} 
+                  w-full 
+                  h-14 
+                  px-4 
+                  py-4
+                  text-base
+                  border-2
+                  ring-2
+                  focus:ring-2
+                  focus:ring-offset-2
+                `}
                 onChange={(e) => setTelegram(e.target.value)}
+                placeholder="Enter your Telegram username or link"
               />
             </div>
 

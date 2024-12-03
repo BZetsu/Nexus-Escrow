@@ -171,8 +171,8 @@ export default function page() {
   }, [escrows, showPastContracts]);
 
   return (
-    <div className="w-full flex items-center justify-center">
-      <Card className="pb-10 mt-3 w-[95%] md:w-[90%] lg:w-[85%] max-w-[1500px] px-5 sm:px-8">
+    <div className="w-[94vw] max-w-[2000px] flex items-center justify-center px-1 sm:px-2 md:px-4">
+      <Card className="pb-10 mt-3 w-[98%] md:w-[95%] lg:w-[92%] max-w-[1800px] px-5 sm:px-8">
         <Stack
           flexDirection="row"
           justifyContent="space-between"

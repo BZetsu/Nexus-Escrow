@@ -19,9 +19,10 @@ import { links, PROGRAM_ID } from "@/app/layout";
 import { get_userr_info } from "@/lib/NexusProgram/escrow/utils.ts/get_userr_info";
 import { backendApi } from "@/lib/utils/api.util";
 import { getFreeLacerEscrow } from "@/lib/NexusProgram/escrow/utils.ts/getFreelacerEscrow";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { getFreelancerEscrowAddress } from "@/lib/NexusProgram/escrow/utils.ts/getFreelancerEscrowAddress";
 import { get_apply_info } from "@/lib/NexusProgram/escrow/utils.ts/get_apply_info";
+import VerifiedIcon from '@mui/icons-material/Verified';
 
 const buttons: buttonType[] = [
   { title: "Message", icon: <TiMessages /> },
@@ -70,6 +71,11 @@ export default function page() {
   const { connection } = useConnection();
   const pathname = usePathname();
   const [Info, setInfo] = useState<any>();
+  const router = useRouter();
+
+  const handleProfileClick = (userId: string) => {
+    router.push(`/escrow/myescrow/${pathname.split('/')[3]}/${userId}`);
+  };
 
   const get_user_info = async () => {
     try {
@@ -201,19 +207,14 @@ export default function page() {
     <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-5 !mb-16">
       <div className="col-span-1 md:col-span-2">
         <Card className="!p-0 overflow-hidden">
-          <div className="w-full rounded-xl m-[auto] px-[0.8rem] pt-[0.8rem] ">
+          <div className="w-[95%] rounded-xl mx-auto mt-3 relative h-[250px]">
             <Image 
-              src={(() => {
-                const imageUrl = userInfo?.image || dragon.src;
-                console.log("Rendering freelancer image with URL:", imageUrl);
-                return imageUrl;
-              })()} 
+              src={userInfo?.image || dragon.src}
               alt="Profile"
-              width={500}
-              height={350}
-              className="w-full h-auto object-cover rounded-xl"
+              fill
+              className="object-cover rounded-xl"
               priority
-              unoptimized
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           </div>
 
@@ -223,7 +224,7 @@ export default function page() {
               justifyContent="space-between"
               alignItems="center"
             >
-              <div className="text-lg font-[500] line-clamp-1 font-mynamarButton">
+              <div className="text-xl font-[600] line-clamp-1 font-mynamarButton">
               {userInfo && output(userInfo.name, "Name")}
               </div>
 
@@ -231,16 +232,16 @@ export default function page() {
                 flexDirection="row"
                 gap={0.4}
                 alignItems="center"
-                className="text-sm font-[500]"
+                className="text-sm font-[600]"
               >
                 <div className="w-[1.2rem]">
                   <Image src={coin} alt="coin" />
                 </div>
                 <div className="pt-[.5rem]">
                   <span>             
-                    {userInfo && Number(userInfo.paymentRatePerHour)}
+                    {userInfo && Number(userInfo.paymentRatePerHour * 160)}
                   </span>
-                  <span> / Hour</span>
+                  <span> / Month</span>
                 </div>
               </Stack>
             </Stack>
@@ -257,7 +258,7 @@ export default function page() {
               flexDirection="row"
               gap={2}
               alignItems="center"
-              className="text-xs"
+              className="text-sm"
             >
               <div className="text-textColor">
               {userInfo && output(userInfo.roles[0], "Role")}
@@ -269,11 +270,13 @@ export default function page() {
             <div className="flex items-center gap-2">
               {userInfo && (
                 <span
-                  onClick={() => links(userInfo.twitter)}
+                  onClick={() => handleProfileClick(userInfo.userId)}
                   className="hover:text-blue-500 transition-colors cursor-pointer flex items-center gap-1"
                 >
                   <XIcon className="text-2xl" />
-                  <span className="text-xs text-gray-500">Verified</span>
+                  <VerifiedIcon 
+                    className={`text-xl ${userInfo.isVerified ? 'text-blue-500' : 'text-gray-400'}`} 
+                  />
                 </span>
               )}
             </div>
@@ -367,9 +370,15 @@ export default function page() {
             </Card>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 px-1">
-              <div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.category, "Category")}</div>
-              {<div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.country, "Country")}</div>}
-              {<div className={`${cardStyle} !py-4`}>{userInfo && output(userInfo.timezone, "Time Zone")}</div>}
+              <div className={`${cardStyle} !py-4 !text-black`}>
+                {userInfo && output(userInfo.category, "Category")}
+              </div>
+              <div className={`${cardStyle} !py-4 !text-black`}>
+                {userInfo && output(userInfo.country, "Country")}
+              </div>
+              <div className={`${cardStyle} !py-4 !text-black`}>
+                {userInfo && output(userInfo.timezone, "Time Zone")}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 px-1">

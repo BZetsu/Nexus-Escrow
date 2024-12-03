@@ -107,34 +107,41 @@ export async function update_user(
   //   preflightCommitment: 'confirmed',
   // });
   console.log("twitter: " + twitter);
+
+  // Helper function to clean empty values
+  const cleanValue = (value: string | boolean | number | undefined) => {
+    if (typeof value === 'string') {
+      return value.trim() === '' ? undefined : value;
+    }
+    return value;
+  };
+
   const apiResponse = await backendApi.patch(`/nexus-user/${anchorWallet.publicKey.toBase58()}`, {
-    name,
-    image: image,
-    category: category,
-    roles: [roles],
-    levelOfExpertise: level_of_expertise,
-    paymentRatePerHour: payment_rate_per_hour.toString(),
-    profileOverview: profile_overview,
-    others: "others",
-    negotiation: nigotion,
-    portfolio: portfolio && portfolio.trim() !== '' ? portfolio : undefined,
-    resume: resume && resume.trim() !== '' ? resume : undefined,
-    // tosp,
-    timeZone: timezone,
-    country,
+    name: cleanValue(name),
+    image: cleanValue(image),
+    category: cleanValue(category),
+    roles: roles ? [cleanValue(roles)].filter(Boolean) : undefined,
+    levelOfExpertise: cleanValue(level_of_expertise),
+    paymentRatePerHour: payment_rate_per_hour?.toString() || undefined,
+    profileOverview: cleanValue(profile_overview),
+    others: cleanValue(others),
+    negotiation: nigotion?.toString() || undefined, // Convert boolean to string
+    portfolio: cleanValue(portfolio),
+    resume: cleanValue(resume),
+    timeZone: cleanValue(timezone),
+    country: cleanValue(country),
     address: anchorWallet.publicKey.toBase58(),
-    twitter: twitter,
-    linkedin: "https://www.youtube.com/",
-    discordId: "https://www.youtube.com/",
-    telegramId: "https://www.youtube.com/",
-    website: "https://www.youtube.com/",
+    twitter: cleanValue(twitter),
+    linkedin: cleanValue(linkedin) || undefined,
+    discordId: cleanValue(discord_id) || undefined,
+    telegramId: cleanValue(telegram_id) || undefined,
+    website: cleanValue(website) || undefined,
   })
   .then((e) => console.log(e))
   .catch((e) => {
-    console.log(e)
+    console.log(e);
     throw e;
-  })
-  ;
+  });
 
   console.log(apiResponse);
   //   if(!apiResponse) {console.log('Do something')}

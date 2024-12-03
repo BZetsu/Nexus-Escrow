@@ -1,40 +1,28 @@
 "use client";
 
+import React, { useState, useEffect } from 'react';
 import { timeLeft } from "@/lib/utils/time_formatter";
-import { IconButton, Stack } from "@mui/material";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import React, { useState, useEffect, memo } from "react";
 
-const CountdownTimer = memo(({ deadline, onEdit }: { deadline: number; onEdit: () => void }) => {
-  const [currentDeadline, setCurrentDeadline] = useState("");
+interface CountdownTimerProps {
+  deadline: number;
+}
+
+const CountdownTimer: React.FC<CountdownTimerProps> = ({ deadline }) => {
+  const [timeRemaining, setTimeRemaining] = useState(() => timeLeft(deadline));
 
   useEffect(() => {
-    if (!deadline) return;
-    
-    setCurrentDeadline(timeLeft(deadline));
-    
     const timer = setInterval(() => {
-      setCurrentDeadline(timeLeft(deadline));
+      setTimeRemaining(timeLeft(deadline));
     }, 1000);
 
     return () => clearInterval(timer);
   }, [deadline]);
 
   return (
-    <Stack mt={4} spacing={2}>
-      <div className="text-xs text-textColor">Deadline</div>
-      <Stack flexDirection="row" gap={1} alignItems="center">
-        <div className="text-lg font-[500] line-clamp-1">
-          {currentDeadline}
-        </div>
-        <IconButton onClick={onEdit}>
-          <EditOutlinedIcon className="text-textColor -mt-2 text-base" />
-        </IconButton>
-      </Stack>
-    </Stack>
+    <div className="text-base font-semibold">
+      {timeRemaining}
+    </div>
   );
-});
+};
 
-CountdownTimer.displayName = 'CountdownTimer';
-
-export default CountdownTimer; 
+export default React.memo(CountdownTimer); 

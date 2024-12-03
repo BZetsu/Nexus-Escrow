@@ -36,6 +36,8 @@ import { USER_PREFIX } from "@/lib/constants/constants";
 import { web3 } from "@project-serum/anchor";
 import { backendApi } from "@/lib/utils/api.util";
 import { getFreeLacerEscrow } from "@/lib/NexusProgram/escrow/utils.ts/getFreelacerEscrow";
+import XIcon from "@mui/icons-material/X";
+import VerifiedIcon from '@mui/icons-material/Verified';
 
 interface EditFormState {
   username: string;
@@ -371,119 +373,91 @@ export default function page() {
     <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-5 gap-5">
       <div className="col-span-1 md:col-span-2">
         <Card className="!p-0 
-          !h-[7rem]                         /* Base height */
-          [@media(max-width:620px)]:!h-[6rem]  /* Start scaling down */
-          [@media(max-width:520px)]:!h-[5.5rem] /* Mid-range */
-          [@media(max-width:420px)]:!h-[5rem]   /* Smaller */
-          [@media(max-width:320px)]:!h-[4.5rem] /* Smallest */
-          sm:!h-[20rem]                     /* Tablet up */
-          md:!h-[25rem]                     /* Desktop */
-          lg:!h-[32rem]                     /* Large screens */
-        ">
-          <div className=" !flex sm:!flex-col">
-            {" "}
-            <div className="relative w-[50%] sm:w-full">
-              <div className="absolute bottom-4 right-[19%] sm:right-8">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <Button
-                  variant="contained"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="!text-[9px] sm:!text-xs !text-black !bg-white !normal-case !font-semibold !font-mynamarButton"
-                >
-                  {isUploading ? "Uploading..." : "Change PFP"}
-                </Button>
-              </div>
-              <div className="!px-[0.8rem] pt-[0.8rem] rounded-xl w-full sm:w-auto">
+          !h-[10rem]                        
+          [@media(max-width:620px)]:!h-[9rem]  
+          [@media(max-width:520px)]:!h-[8.5rem]
+          [@media(max-width:420px)]:!h-[8rem]
+          [@media(max-width:320px)]:!h-[7.5rem]
+          sm:!h-[18rem]                     
+          md:!h-[22rem]                     
+          lg:!h-[28rem]"
+        >
+          <div className="!flex sm:!flex-col h-full">
+            <div className="relative w-[50%] sm:w-full h-full">
+              <div className="!px-[0.8rem] pt-[0.8rem] rounded-xl w-full sm:w-auto h-[calc(100%-2rem)]">
                 <Image
                   src={(() => {
                     const imageUrl = userInfo?.image || dragon.src;
-                    console.log("Rendering image with URL:", imageUrl);
                     return imageUrl;
                   })()}
                   alt="Profile"
                   width={500}
                   height={350}
-                  className="w-full h-auto object-cover rounded-xl 
-                    max-w-[250px] h-[100px]                /* Base size */
-                    [@media(max-width:620px)]:h-[70px]     /* Start scaling down */
-                    [@media(max-width:520px)]:h-[60px]     /* Mid-range */
-                    [@media(max-width:420px)]:h-[50px]     /* Smaller */
-                    [@media(max-width:320px)]:h-[40px]     /* Smallest */
-                    sm:max-w-[350px] sm:h-[180px]         /* Tablet up */
-                    md:max-w-[300px] md:h-[160px]         /* Desktop */
-                    lg:max-w-[450px] lg:h-[300px]         /* Large screens */
-                  "
+                  className="w-full h-full object-cover rounded-xl 
+                    max-w-[250px] min-h-[140px]           
+                    [@media(max-width:620px)]:min-h-[120px]
+                    [@media(max-width:520px)]:min-h-[110px]
+                    [@media(max-width:420px)]:min-h-[100px]
+                    [@media(max-width:320px)]:min-h-[90px]
+                    sm:max-w-full sm:h-[80px]        
+                    md:h-[180px]         
+                    lg:h-[240px]"
                   priority
                   unoptimized
                 />
               </div>
             </div>
-            <div className="px-4 pb-4">
-              <Stack pt={2} spacing={3}>
-                <Stack
-                  flexDirection="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                >
-                  <div className="text-base sm:text-lg font-[600] line-clamp-1 font-myanmar">
-                    {userInfo?.name || "Name"}
+
+            <div className="flex-1 px-4 pb-6">
+              <div className="text-2xl sm:text-3xl md:text-4xl font-[600] line-clamp-1 font-myanmar px-3 pt-4">
+                {userInfo?.name || "Name"}
+              </div>
+
+              <div className="w-full -mt-1">
+                <div className="border border-gray-200 rounded-md px-3 py-1.5  
+                  w-full flex justify-between items-center 
+                  bg-white/50 backdrop-blur-sm">
+                  <div className="text-sm sm:text-base md:text-lg text-black/80 font-medium">
+                    {userInfo?.roles?.[0] || "Role"}
                   </div>
-                </Stack>
-              </Stack>
-
-              <Stack
-                py={1.6}
-                justifyContent="space-between"
-                className="!flex-col sm:!flex-row !items-start sm:!items-center"
-              >
-                <div className="text-sm sm:text-base text-black/80">
-                  {userInfo?.roles?.[0] || "Role"}
+                  <div className="flex items-center gap-2">
+                    <span
+                      onClick={() => userInfo?.twitter && window.open(userInfo.twitter, '_blank')}
+                      className="hover:text-blue-500 transition-colors cursor-pointer"
+                    >
+                      <XIcon className="text-lg hover:text-blue-500 transition-colors" />
+                    </span>
+                    <span className="cursor-pointer">
+                      <VerifiedIcon 
+                        className={`text-lg ${userInfo?.isVerified ? 'text-blue-500' : 'text-gray-400'} 
+                        hover:text-blue-500 transition-colors`} 
+                      />
+                    </span>
+                  </div>
                 </div>
-
-                {/* <Stack
-                  gap={0.5}
-                  alignItems="center"
-                  justifyContent="space-between"
-                  className="text-[10px] pt-4 sm:pt-0 !flex-row"
-                >
-                  <div className="text-textColor">Open to work</div>
-                  <Switch color="success" />
-                </Stack> */}
-              </Stack>
-
-              {/* <div className=" text-xs line-clamp-1 hidden sm:block">
-                {address !== null ? address : "No address"}
-              </div> */}
+              </div>
             </div>
           </div>
-
-          {/* <div className=" text-xs line-clamp-1 p-4 sm:hidden">
-            {address !== null
-              ? address.slice(0, 8) + "..." + address.slice(-8)
-              : "No address"}
-          </div> */}
         </Card>
 
         <div className="grid grid-cols-2 gap-4 mt-[14px] ">
           <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold`}>
             {userInfo && output(userInfo.levelOfExpertise, "Level Of Expertise")}
           </div>
-          <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold flex items-center gap-2`}>
-            <img 
-              alt="coin" 
-              width="33" 
-              height="28" 
-              className="w-5 h-5" 
-              src="/_next/static/media/coin.0c914039.svg" 
-            />
-            {userInfo && (Number(userInfo.paymentRatePerHour) || 0)}
+          <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold flex items-center justify-between`}>
+            <div className="flex items-center gap-2">
+              <img 
+                alt="coin" 
+                width="37" 
+                height="32" 
+                className="w-6 h-6 -translate-y-[2px]"
+                src="/_next/static/media/coin.0c914039.svg" 
+              />
+              <span className="flex items-center translate-y-[1px]">
+                {userInfo && (Number(userInfo.paymentRatePerHour) || 0)}
+              </span>
+            </div>
+            <span className="text-sm text-gray-500 translate-y-[2px]">/month</span>
           </div>
         </div>
       </div>
@@ -537,25 +511,20 @@ export default function page() {
               stiffness: 200,
             }}
           >
-            <Card className="rounded-t-none pb-2 !h-[9.85rem]" width="lg">
-              <Stack
-                className="text-lg sm:text-xl font-[500]"
-                flexDirection="row"
-                gap={6}
-                justifyContent="center"
-                alignContent="center"
-                py={4}
-              >
-                <div>{ongoing ? ongoing.length : "--"} Ongoing Jobs</div>
-                <div>{completed ? completed.length : "--"} Jobs Completed</div>
-              </Stack>
-
-              {/* <div className="px-1 mt-4 text-[10px] text-textColor font-[500]">
-                0 Leaderboard Ratings
-              </div> */}
+            <Card className="rounded-t-none pb-2 !h-[5rem] sm:!h-[6rem]" width="lg">
+              <div className="flex flex-row justify-center items-center gap-8 py-1 sm:py-2 font-myanmar_khyay">
+                <div className="text-base sm:text-xl">
+                  <span className="font-[500]">{ongoing ? ongoing.length : "--"}</span>
+                  <span className="text-gray-500"> Ongoing Jobs</span>
+                </div>
+                <div className="text-base sm:text-xl">
+                  <span className="font-[500]">{completed ? completed.length : "--"}</span>
+                  <span className="text-gray-500"> Jobs Completed</span>
+                </div>
+              </div>
             </Card>
 
-            <Card className="mt-4" width="lg">
+            <Card className="mt-4 !h-[13rem]" width="lg">
               <div className="text-xs text-textColor">Profile Overview</div>
               <div className="text-sm leading-6 line-clamp-[6] mt-2">
                 {userInfo && userInfo.profileOverview}
@@ -609,16 +578,32 @@ export default function page() {
                     sx={inputMuiFontSize}
                   />
 
-                  <TextField
-                    label="Twitter Id"
-                    variant="outlined"
-                    value={editForm.twitterId}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, twitterId: e.target.value })
-                    }
-                    sx={inputMuiFontSize}
-                    style={{ width: "20rem" }}
-                  />
+                  <div className="relative flex items-center">
+                    <TextField
+                      label="Twitter Id"
+                      variant="outlined"
+                      value={editForm.twitterId}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, twitterId: e.target.value })
+                      }
+                      sx={inputMuiFontSize}
+                      style={{ width: "20rem" }}
+                    />
+                    <div className="absolute right-2 flex items-center gap-2">
+                      <span
+                        onClick={() => editForm.twitterId && window.open(editForm.twitterId, '_blank')}
+                        className="hover:text-blue-500 transition-colors cursor-pointer"
+                      >
+                        <XIcon className="text-lg hover:text-blue-500 transition-colors" />
+                      </span>
+                      <span className="cursor-pointer">
+                        <VerifiedIcon 
+                          className={`text-lg ${userInfo?.isVerified ? 'text-blue-500' : 'text-gray-400'} 
+                          hover:text-blue-500 transition-colors`} 
+                        />
+                      </span>
+                    </div>
+                  </div>
                 </Stack>
 
                 <div className="grid gap-6 grid-cols-1 sm:grid-cols-3">

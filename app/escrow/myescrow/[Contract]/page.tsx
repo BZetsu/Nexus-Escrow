@@ -33,6 +33,7 @@ import { approvePayment } from "@/lib/NexusProgram/escrow/ApprovePayment";
 import { cancelEscrow } from "@/lib/NexusProgram/escrow/cancel_escrow";
 import { useEscrowCache } from "@/lib/hooks/useEscrowCache";
 import { USER_PREFIX } from "@/lib/constants/constants";
+import CountdownTimer from "@/components/CountdownTimer";
 const idl = require("@/data/nexus.json");
 
 // Add loading component
@@ -78,7 +79,6 @@ export default function page() {
   const [descriptionError, setDescriptionError] = useState("");
   const [copied, setCopied] = useState(false);
   const [select, setSelect] = useState<any>()
-  const [currentDeadline, setCurrentDeadline] = useState(deadline);
 
   const anchorWallet = useAnchorWallet();
   const { connection } = useConnection();
@@ -575,20 +575,6 @@ export default function page() {
     }
   }, [cachedEscrowInfo]);
 
-  useEffect(() => {
-    if (!escrowInfo) return;
-    
-    // Initial update
-    setCurrentDeadline(timeLeft(escrowInfo.deadline));
-    
-    // Update every second
-    const timer = setInterval(() => {
-      setCurrentDeadline(timeLeft(escrowInfo.deadline));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [escrowInfo]);
-
   const refreshAccordions = async () => {
     await Promise.all([
       getEscrowInfosss(),
@@ -687,42 +673,45 @@ export default function page() {
             </Card>
 
             <Card className="col-span-1">
-              {escrowInfo &&  escrowDateInfo && <Stack
-                flexDirection="row"
-                gap={1}
-                className="text-sm"
-                alignItems="center"
-              >
-                <div className={`transition-colors ${!escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
-                  Public
-                </div>
-                <Switch
-                  checked={escrowDateInfo.private}
-                  onChange={(e) => {
-                    console.log(e.target.checked);
-                    privates(e.target.checked)
-                  }}
-                  className="-mt-[6px]"
-                />
-                <div className={`transition-colors ${escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
-                  Private
-                </div>
-              </Stack>}
-
-              <Stack mt={4} spacing={2}>
-                <div className="text-xs text-textColor">Deadline</div>
-                <Stack flexDirection="row" gap={1} alignItems="center">
-                  <div
-                    onClick={() => filter()}
-                    className="text-lg font-[500] line-clamp-1"
+              {escrowInfo &&  escrowDateInfo && (
+                <>
+                  <Stack
+                    flexDirection="row"
+                    gap={1}
+                    className="text-sm mb-6"
+                    alignItems="center"
                   >
-                    {currentDeadline}
+                    <div className={`transition-colors ${!escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
+                      Public
+                    </div>
+                    <Switch
+                      checked={escrowDateInfo.private}
+                      onChange={(e) => {
+                        privates(e.target.checked)
+                      }}
+                      className="-mt-[6px]"
+                    />
+                    <div className={`transition-colors ${escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
+                      Private
+                    </div>
+                  </Stack>
+
+                  <div className="mt-auto pt-4 border-t">
+                    <div className="text-sm text-gray-600 mb-2 flex items-center justify-between">
+                      <span>Deadline</span>
+                      <IconButton 
+                        onClick={() => setOpen(true)}
+                        className="-mr-2"
+                      >
+                        <EditOutlinedIcon className="text-textColor text-base" />
+                      </IconButton>
+                    </div>
+                    <div className="flex items-center">
+                      <CountdownTimer deadline={escrowInfo.deadline} />
+                    </div>
                   </div>
-                  <IconButton onClick={handleOpenModal}>
-                    <EditOutlinedIcon className="text-textColor -mt-2  text-base" />
-                  </IconButton>
-                </Stack>
-              </Stack>
+                </>
+              )}
             </Card>
           </div>
 
@@ -749,6 +738,7 @@ export default function page() {
                   cancel={handleCancelProjectTermination}
                   escrowDateInfo={escrowDateInfo}
                   refreshData={refreshAccordions}
+                  cardHeight="h-[285px]"
                 >
                   {escrowInfo && escrowInfo.status !== 5 && escrowInfo.status !== 3 && escrowInfo.status !== 6 && escrowInfo.status !== 1 && <Stack flexDirection="row" gap={1}>
                     <Button
@@ -861,6 +851,7 @@ export default function page() {
                 link={"approve"}
                 font_size="!text-sm"
                 padding="!pt-[0.2rem]"
+                cardHeight="h-[285px]"
               />
             )}
           </div>
@@ -871,13 +862,13 @@ export default function page() {
           onClose={handleCloseModal}
           className="grid place-items-center"
         >
-          <Card className="text-center text-lg p-10">
+          <Card className="text-center text-lg p-10 w-[90%] max-w-[500px]">
             <div>Active Deadline</div>
             <div className="mt-6 text-3xl font-[500]">
               {escrowInfo ? deadline : "2d 24hrs 30min"}
             </div>
             <input
-              className={`${inputStyle} mx-auto mt-8 w-[80%]`}
+              className={`${inputStyle} mx-auto mt-8 w-full h-12 px-4 text-lg`}
               type="datetime-local"
               value={newdeadline}
               onChange={(e) => {
@@ -888,7 +879,7 @@ export default function page() {
             <Stack alignItems="center" mt={5}>
               <Button
                 variant="contained"
-                className="!text-second !text-xs sm:!text-sm !bg-main !normal-case !px-10 !py-2"
+                className="!text-second !text-xs sm:!text-sm !bg-main !normal-case !px-10 !py-3"
                 onClick={() => update_escrow()}
               >
                 Done

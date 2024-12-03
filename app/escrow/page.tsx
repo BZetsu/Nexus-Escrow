@@ -187,12 +187,20 @@ export default function Page() {
     return deadline < now;
   };
 
-  // Modify the filteredEscrows to handle private contracts
-  const filteredEscrows = escrows.filter(escrow => 
-    escrow.contractName.toLowerCase().includes(searchTerm.toLowerCase()) && 
-    !isContractExpired(escrow.deadline) &&
-    !escrow.private  // Only show public contracts
-  );
+  // Modify the filteredEscrows to handle private contracts and add type checking
+  const filteredEscrows = escrows.filter(escrow => {
+    // Check if contract name matches search term
+    const nameMatches = escrow.contractName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Check if contract is not expired
+    const notExpired = !isContractExpired(escrow.deadline);
+    
+    // Check if contract is public (not private)
+    const isPublic = !escrow.private;
+    
+    // Return true only if all conditions are met
+    return nameMatches && notExpired && isPublic;
+  });
 
   return (
     <div>
@@ -402,7 +410,7 @@ export default function Page() {
 
           <Stack mt={3} spacing={2.6} className="h-[450px] overflow-y-scroll overflow-x-hidden escrow pr-2">
             {filteredEscrows.map((el, i) => (
-              (!el.private && el.status !== 6) &&  // Double check privacy status
+              (el.status !== 6) &&
               (el.reciever !== null ? el.reciever.toBase58() == anchorWallet?.publicKey.toBase58() : true) &&
               !isContractExpired(el.deadline) &&
               <Suspense fallback={<Loading />} key={i}>
@@ -414,7 +422,7 @@ export default function Page() {
                   createdAt={el.createdAt}
                   status={el.status || 0}
                   type={2}
-                  isPrivate={el.private}  // Pass privacy status to card
+                  isPrivate={el.private}
                 />
               </Suspense>
             ))}
