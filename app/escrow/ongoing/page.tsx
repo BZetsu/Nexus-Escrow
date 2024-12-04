@@ -184,7 +184,7 @@ export default function page() {
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 place-content-center-center w-full py-10 max-w-7xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 place-content-center-center w-full pt-4 max-w-7xl mx-auto">
         <Card className="pb-10">
           <div className="flex justify-center sm:justify-start items-center gap-3 sm:gap-5">
             {menu.map((el, i) => (
