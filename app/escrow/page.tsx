@@ -21,18 +21,50 @@ import { backendApi } from "@/lib/utils/api.util";
 import { useRouter } from "next/navigation";
 import { EscrowResponse } from "@/lib/utils/api.util";
 import debounce from "lodash/debounce";
+import { motion } from "framer-motion";
+
+// Add this interface near the top of the file
+interface FormState {
+  ContractName: string;
+  TelegramLink: string;
+  DeadLine: number;
+  Amount: number;
+  Link: string;
+  Description: string;
+  private: boolean;
+}
 
 export default function Page() {
+  const FORM_STORAGE_KEY = 'escrow_form_draft';
+
   const [timeValue, setTimeValue] = useState("");
   const [escrows, setEscrows] = useState<any[]>([]);
-  const [form, setForm] = useState({
-    ContractName: "",
-    TelegramLink: "",
-    DeadLine: 0,
-    Amount: 0,
-    Link: "",
-    Description: "",
-    private: false,
+  const [form, setForm] = useState<FormState>(() => {
+    if (typeof window !== 'undefined') {
+      const savedForm = localStorage.getItem(FORM_STORAGE_KEY);
+      if (savedForm) {
+        try {
+          const parsedForm = JSON.parse(savedForm);
+          // Ensure number fields are properly parsed
+          return {
+            ...parsedForm,
+            Amount: parsedForm.Amount ? Number(parsedForm.Amount) : 0,
+            DeadLine: parsedForm.DeadLine ? Number(parsedForm.DeadLine) : 0,
+          };
+        } catch (error) {
+          console.error('Error parsing saved form:', error);
+        }
+      }
+    }
+    return {
+      ContractName: "",
+      TelegramLink: "",
+      DeadLine: 0,
+      Amount: 0,
+      Link: "",
+      Description: "",
+      private: false,
+    };
   });
 
   const anchorWallet = useAnchorWallet();
@@ -51,8 +83,13 @@ export default function Page() {
     );
   };
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [databaseEscrowInfo, setDatabaseEscrowInfo] = useState<EscrowResponse | null>(null);
+
   const fetchEscrows = async () => {
     try {
+      setIsLoading(true);
       const escrow = await getAllEscrow(connection, "confirmed");
       
       console.log("Raw escrow data before processing:", escrow.map(es => ({
@@ -64,6 +101,7 @@ export default function Page() {
       })));
       
       const databaseEscrowInfo = await backendApi.get<EscrowResponse>(`/escrow`);
+      setDatabaseEscrowInfo(databaseEscrowInfo);
       
       if (!databaseEscrowInfo || !databaseEscrowInfo.data) {
         console.error('No escrow data received from backend');
@@ -127,6 +165,8 @@ export default function Page() {
       setEscrows(sortedEscrows);
     } catch (error) {
       console.error('Error in fetchEscrows:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -140,7 +180,7 @@ export default function Page() {
     const date = new Date(e.target.value);
     const milliseconds = date.getTime();
     setTimeValue(e.target.value);
-    setForm((prevForm) => ({ 
+    setForm((prevForm: FormState) => ({ 
       ...prevForm, 
       DeadLine: milliseconds / 1000 
     }));
@@ -153,6 +193,7 @@ export default function Page() {
     
     try {
       setIsCreating(true);
+      console.log("Creating contract with private flag:", form.private);
       notify_laoding("Creating Escrow Contract...");
 
       await initEscrow(
@@ -170,6 +211,7 @@ export default function Page() {
       
       notify_delete();
       notify_success("Escrow Contract Created!");
+      clearForm();
       router.push('/escrow/myescrow');
 
     } catch (e) {
@@ -200,12 +242,19 @@ export default function Page() {
   // Optimize filtered escrows
   const filteredEscrows = useMemo(() => 
     escrows.filter(escrow => {
+      // First check if we have database info for this escrow
+      const databaseEscrow = databaseEscrowInfo?.data?.find(
+        (dbEscrow) => dbEscrow.escrowAddress === escrow.pubkey.toBase58()
+      );
+      
       const nameMatches = escrow.contractName.toLowerCase().includes(searchTerm.toLowerCase());
       const notExpired = !isContractExpired(escrow.deadline);
-      const isPublic = !escrow.private;
+      // Use database privacy status if available, otherwise use contract privacy
+      const isPublic = databaseEscrow ? !databaseEscrow.private : !escrow.private;
+      
       return nameMatches && notExpired && isPublic;
     }),
-    [escrows, searchTerm]
+    [escrows, searchTerm, databaseEscrowInfo]
   );
 
   // Add this helper function after the component's state declarations
@@ -227,40 +276,81 @@ export default function Page() {
     return `https://t.me/${cleanInput}`;
   };
 
+  // Add effect to save form changes
+  useEffect(() => {
+    if (form.ContractName || form.Description || form.Amount || form.Link || form.TelegramLink || form.DeadLine) {
+      try {
+        const formToSave = {
+          ...form,
+          Amount: Number(form.Amount) || 0, // Ensure it's a number
+          DeadLine: Number(form.DeadLine) || 0,
+        };
+        localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formToSave));
+      } catch (error) {
+        console.error('Error saving form:', error);
+      }
+    }
+  }, [form]);
+
+  // Add function to clear form after successful submission
+  const clearForm = useCallback(() => {
+    localStorage.removeItem(FORM_STORAGE_KEY);
+    setForm({
+      ContractName: "",
+      TelegramLink: "",
+      DeadLine: 0,
+      Amount: 0,
+      Link: "",
+      Description: "",
+      private: false,
+    });
+    setTimeValue("");
+  }, []);
+
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 place-content-center w-full py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <form onSubmit={(e) => e.preventDefault()}>
           <Card className="pb-6">
-            <Stack flexDirection="row" justifyContent="space-between">
+            <Stack flexDirection="row" justifyContent="space-between" alignItems="center">
               <div className="text-sm sm:text-base text-textColor font-myanmar">
                 Create new escrow contract
               </div>
-              <Stack
-                flexDirection="row"
-                gap={0.3}
-                className="text-xs sm:text-sm pt-[0.2rem]"
-                alignItems="flex-start"
-              >
-                <div className={`transition-colors ${!form.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
-                  Public
-                </div>
-                <div className="mt-[-6px]">
-                  <Switch
-                    color="warning"
-                    checked={form.private}
-                    onChange={(e) => {
-                      setForm((prevForm) => ({
-                        ...prevForm,
-                        private: e.target.checked,
-                      }))
-                    }}
-                    size="small"
-                  />
-                </div>
-                <div className={`transition-colors ${form.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
-                  Private
-                </div>
+              <Stack flexDirection="row" gap={4} alignItems="center">
+                {(form.ContractName || form.Description || form.Amount || form.Link || form.TelegramLink) && (
+                  <Button
+                    onClick={clearForm}
+                    className="!text-xs !font-medium !capitalize !bg-gray-100 hover:!bg-gray-200 !text-gray-700 !w-fit !min-w-0 !px-3 !py-1"
+                  >
+                    Clear Form
+                  </Button>
+                )}
+                <Stack
+                  flexDirection="row"
+                  gap={0.3}
+                  className="text-xs sm:text-sm pt-[0.2rem]"
+                  alignItems="flex-start"
+                >
+                  <div className={`transition-colors ${!form.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
+                    Public
+                  </div>
+                  <div className="mt-[-6px]">
+                    <Switch
+                      color="warning"
+                      checked={form.private}
+                      onChange={(e) => {
+                        setForm((prevForm: FormState) => ({
+                          ...prevForm,
+                          private: e.target.checked,
+                        }));
+                      }}
+                      size="small"
+                    />
+                  </div>
+                  <div className={`transition-colors ${form.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
+                    Private
+                  </div>
+                </Stack>
               </Stack>
             </Stack>
 
@@ -277,7 +367,7 @@ export default function Page() {
                     value={form.ContractName}
                     onChange={(e) => {
                       if (e.target.value.length <= 32) {
-                        setForm((prevForm) => ({
+                        setForm((prevForm: FormState) => ({
                           ...prevForm,
                           ContractName: e.target.value,
                         }))
@@ -297,13 +387,13 @@ export default function Page() {
 
               <div className="grid gap-6 grid-cols-4">
                 <div className="col-span-3 w-[102%]">
-                  <label className="font-myanmar mb-1 block">Telegram Link</label>
+                  <label className="font-myanmar mb-1 block">Telegram Username</label>
                   <input
                     type="text"
                     value={form.TelegramLink}
                     onChange={(e) => {
                       const formattedLink = formatTelegramLink(e.target.value);
-                      setForm((prevForm) => ({
+                      setForm((prevForm: FormState) => ({
                         ...prevForm,
                         TelegramLink: formattedLink,
                       }));
@@ -334,7 +424,7 @@ export default function Page() {
                       min={0}
                       value={form.Amount || ''}
                       onChange={(e) =>
-                        setForm((prevForm) => ({
+                        setForm((prevForm: FormState) => ({
                           ...prevForm,
                           Amount: Number(e.target.value),
                         }))
@@ -354,7 +444,7 @@ export default function Page() {
                     type="text"
                     value={form.Link}
                     onChange={(e) =>
-                      setForm((prevForm) => ({
+                      setForm((prevForm: FormState) => ({
                         ...prevForm,
                         Link: e.target.value,
                       }))
@@ -370,7 +460,7 @@ export default function Page() {
                 <textarea
                   value={form.Description}
                   onChange={(e) =>
-                    setForm((prevForm) => ({
+                    setForm((prevForm: FormState) => ({
                       ...prevForm,
                       Description: e.target.value,
                     }))
@@ -433,23 +523,38 @@ export default function Page() {
           </div>
 
           <Stack mt={3} spacing={2.6} className="h-[450px] overflow-y-scroll overflow-x-hidden escrow pr-2">
-            {filteredEscrows.map((el, i) => (
-              (el.status !== 6) &&
-              (el.reciever !== null ? el.reciever.toBase58() == anchorWallet?.publicKey.toBase58() : true) &&
-              !isContractExpired(el.deadline) &&
-              <Suspense fallback={<Loading />} key={i}>
-                <CardContract
-                  contractName={el.contractName}
-                  amount={Number(el.amount)}
-                  deadline={Number(el.deadline)}
-                  escrow={el.pubkey.toBase58()}
-                  createdAt={el.createdAt}
-                  status={el.status || 0}
-                  type={2}
-                  isPrivate={el.private}
-                />
-              </Suspense>
-            ))}
+            {isLoading ? (
+              <div className="flex items-center justify-center h-[200px] sm:h-[300px] w-full">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center text-textColor px-4"
+                >
+                  <div className="text-base sm:text-lg font-medium">
+                    Loading Open Contracts...
+                  </div>
+                </motion.div>
+              </div>
+            ) : (
+              filteredEscrows.map((el, i) => (
+                (el.status !== 6) &&
+                (el.reciever !== null ? el.reciever.toBase58() == anchorWallet?.publicKey.toBase58() : true) &&
+                !isContractExpired(el.deadline) &&
+                <Suspense fallback={<Loading />} key={i}>
+                  <CardContract
+                    contractName={el.contractName}
+                    amount={Number(el.amount)}
+                    deadline={Number(el.deadline)}
+                    escrow={el.pubkey.toBase58()}
+                    createdAt={el.createdAt}
+                    status={el.status || 0}
+                    type={2}
+                    isPrivate={el.private}
+                  />
+                </Suspense>
+              ))
+            )}
           </Stack>
         </Card>
       </div>
