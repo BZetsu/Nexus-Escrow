@@ -60,7 +60,7 @@ export default function Navbar() {
             transform: `translateX(calc(${activeIndex * 100}% + ${
               // Different gap multiplier after My Escrows
               activeIndex <= 1 
-                ? activeIndex * 27 
+                ? activeIndex * 29 
                 : (activeIndex * 27) + 10
             }px))`,
           }}
