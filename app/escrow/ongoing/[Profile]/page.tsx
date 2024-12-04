@@ -154,14 +154,19 @@ export default function page() {
       const escrow = new web3.PublicKey(address);
       console.log(material)
       const tx = await submit(anchorWallet, connection, wallet, escrow, material);
-      // setShowSubmission(true);
-      console.log(tx);
       notify_delete();
       notify_success("Submitted Successfully!");
+      
+      // Add refresh
+      await Promise.all([
+        getEscrowInfos(),
+        getApply()
+      ]);
 
     } catch (e) {
       notify_delete();
-      notify_error("Transaction Failed!");      console.log(e);
+      notify_error("Transaction Failed!");
+      console.log(e);
     } finally {
       setIsSubmitting(false);
     }
@@ -180,10 +185,14 @@ export default function page() {
       const escrow = new web3.PublicKey(address);
 
       const tx = await fTarminat(anchorWallet, connection, wallet, escrow);
-      // setShowSubmission(true);
-      console.log(tx);
       notify_delete();
       notify_success("Contract Terminated Successfully!");
+
+      // Add refresh
+      await Promise.all([
+        getEscrowInfos(),
+        getApply()
+      ]);
 
     } catch (e) {
       notify_delete();
@@ -205,10 +214,14 @@ export default function page() {
       const escrow = new web3.PublicKey(address);
 
       const tx = await openDispute(anchorWallet, connection, wallet, escrow);
-      // setShowSubmission(true);
-      console.log(tx);
       notify_delete();
       notify_success("Dispute Opened!");
+
+      // Add refresh
+      await Promise.all([
+        getEscrowInfos(),
+        getApply()
+      ]);
 
     } catch (e) {
       notify_delete();
@@ -318,6 +331,13 @@ export default function page() {
       );
       notify_delete();
       notify_success("Application Cancelled!")
+
+      // Add refresh
+      await Promise.all([
+        getEscrowInfos(),
+        getApply()
+      ]);
+
     } catch (e) {
       notify_delete();
       notify_error("Transaction Failed!");
@@ -459,14 +479,14 @@ export default function page() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mt-4 px-0">
-          <Card className="!p-0 col-span-1 sm:col-span-2 overflow-hidden h-[450px] w-full">
+          <Card className="!p-0 col-span-1 sm:col-span-2 overflow-hidden h-[457px] w-full">
             <div className="p-2">
               <Image
                 src={escrow_info?.founderInfo?.image || dragon.src}
                 alt={escrow_info?.founderInfo?.name || "Profile"}
                 width={500}
                 height={500}
-                className="w-full h-[180px] [@media(min-width:500px)]:h-[350px] sm:h-[250px] rounded-xl object-cover object-center mt-1"
+                className="w-full h-[150px] [@media(min-width:500px)]:h-[200px] sm:h-[180px] rounded-xl object-cover object-center mt-1"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = dragon.src;
@@ -569,20 +589,9 @@ export default function page() {
                       <>
                         {escrow_info.status === 9 && (
                           <div className="flex gap-2 mt-4">
-                            <div 
-                              onClick={() => links(escrow_info.materials)}
-                              className="w-fit cursor-pointer"
-                            >
-                              <Card className="!py-2 !px-2 grid place-content-center hover:scale-105 transition-transform duration-200">
-                                <CiFileOn className="text-6xl mx-auto" />
-                                <div className="text-xs mt-1">
-                                  Link to Resources
-                                </div>
-                              </Card>
-                            </div>
                             <div className="w-full">
                               <Card className="text-xs text-center !shadow-none !border !border-textColor">
-                                Your submission has been sent, Wait until the Client Approve it within the next 14 days otherwise the funds will be released to you
+                                Your submission has been sent, The Contract Creator will approve it within the next 14 days or the payment will be released to you
                               </Card>
                             </div>
                           </div>
