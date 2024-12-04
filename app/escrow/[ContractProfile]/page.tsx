@@ -122,20 +122,14 @@ export default function page() {
         connection,
         info.founder
       );
-      info.escrow = escrow;
+      
+      info.founderInfo = {
+        name: "--",
+        image: dragon.src,
+        twitter: "",
+        ...founder_info
+      };
 
-      const [freelancer] = web3.PublicKey.findProgramAddressSync(
-        [anchorWallet!.publicKey.toBuffer(), Buffer.from(USER_PREFIX)],
-        PROGRAM_ID
-      );
-
-      const freelancer_info = await get_userr_info(
-        anchorWallet,
-        connection,
-        freelancer
-      );
-
-      const databaseEscrowInfo = await backendApi.get<EscrowResponse>(`/escrow/${address}`);
       const founderAddress = info.founder.toBase58();
       
       try {
@@ -154,18 +148,31 @@ export default function page() {
 
         if (founderInfo) {
           info.founderInfo = {
-            ...founder_info,
-            name: founderInfo.name,
-            image: founderInfo.image || dragon.src,
-            twitter: founderInfo.twitter || ''
+            ...info.founderInfo,
+            name: founderInfo.name || info.founderInfo.name,
+            image: founderInfo.image || info.founderInfo.image,
+            twitter: founderInfo.twitter || info.founderInfo.twitter
           };
         }
       } catch (error) {
         console.error('Error fetching founder info:', error);
-        info.founderInfo = founder_info; // Fallback to blockchain data
       }
 
-      // Update these after the database fetch
+      info.escrow = escrow;
+
+      const [freelancer] = web3.PublicKey.findProgramAddressSync(
+        [anchorWallet!.publicKey.toBuffer(), Buffer.from(USER_PREFIX)],
+        PROGRAM_ID
+      );
+
+      const freelancer_info = await get_userr_info(
+        anchorWallet,
+        connection,
+        freelancer
+      );
+
+      const databaseEscrowInfo = await backendApi.get<EscrowResponse>(`/escrow/${address}`);
+      
       setEscrowDateInfo(databaseEscrowInfo.data);
       info.freelancer = freelancer_info;
       setEscrowInfo(info);
@@ -359,7 +366,7 @@ export default function page() {
               alignItems="center"
               className="text-base sm:text-xl font-[600] w-full pt-2"
             >
-              <div className="flex-1 text-base sm:text-xl md:text-2xl font-bold translate-y-1">
+              <div className="flex-1 text-base sm:text-xl md:text-2xl font-bold -translate-y-0.5 sm:translate-y-1">
                 {escrowInfo && escrowInfo.contractName !== "" ? (
                   <span className="text-black">
                     {escrowInfo.contractName}
@@ -423,9 +430,9 @@ export default function page() {
 
         <div className="grid sm:grid-cols-5 gap-4 mt-5">
           <Card 
-            className="!p-0 sm:col-span-2 overflow-hidden h-[320px] sm:h-[520px]"
+            className="!p-0 sm:col-span-2 overflow-hidden h-[340px] sm:h-[520px]"
           >
-            <div className="flex flex-col sm:flex-col p-2 sm:p-3 h-full">
+            <div className="flex flex-col sm:flex-col p-2 sm:p-3 pb-6 sm:pb-8 h-full">
               <Image
                 src={founderProfilePic || escrowInfo?.founderInfo?.image || dragon}
                 alt="profile"
@@ -447,11 +454,11 @@ export default function page() {
                 </div>
                 <div className="border border-gray-200 rounded-xl px-4 py-4 flex items-center justify-between w-full">
                   <div className="text-base sm:text-xl font-[600] font-myanmarButton">
-                    {escrowInfo ? escrowInfo.founderInfo.name : "--"}
+                    {escrowInfo?.founderInfo?.name || "--"}
                   </div>
                   <div className="flex items-center gap-2">
                     <span
-                      onClick={() => links(escrowInfo.founderInfo.twitter)}
+                      onClick={() => links(escrowInfo?.founderInfo?.twitter)}
                       className="cursor-pointer hover:text-blue-400 transition-colors duration-200"
                     >
                       <XIcon className="text-xl" />
@@ -466,7 +473,7 @@ export default function page() {
                 </div>
               </div>
 
-              <div className="flex justify-center mt-4">
+              <div className="flex justify-center mt-2 sm:mt-3">
                 <Button
                   onClick={() => {
                     if (escrowInfo && escrowDateInfo) {
@@ -484,7 +491,8 @@ export default function page() {
                     }
                   }}
                   variant="contained"
-                  className="!text-[10px] sm:!text-sm !font-semibold !capitalize !bg-second !py-2 w-full sm:w-fit sm:!px-12"
+                  className="!text-sm sm:!text-base !font-semibold !capitalize !bg-second 
+                    !py-3 sm:!py-2.5 w-full sm:w-fit sm:!px-12"
                 >
                   Start Chat
                 </Button>
@@ -622,4 +630,3 @@ export default function page() {
     </div>
   );
 }
-
