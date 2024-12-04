@@ -15,6 +15,8 @@ import dragon from "@/public/dragon.svg";
 import { motion } from "framer-motion";
 import { cardStyle, inputMuiFontSize, inputStyle } from "@/lib/styles/styles";
 import { profileOverview } from "@/lib/fakedata/Data";
+import TimeZoneInput from "@/components/TimeZoneInput";
+import CountryInput from "@/components/CountryInput";
 import ExpertiseLevelInput from "@/components/ExpertiseLevelInput";
 import { update_user } from "@/lib/user/update_user";
 import {
@@ -36,8 +38,6 @@ import { backendApi } from "@/lib/utils/api.util";
 import { getFreeLacerEscrow } from "@/lib/NexusProgram/escrow/utils.ts/getFreelacerEscrow";
 import XIcon from "@mui/icons-material/X";
 import VerifiedIcon from '@mui/icons-material/Verified';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import dynamic from 'next/dynamic';
 
 interface EditFormState {
   username: string;
@@ -58,17 +58,6 @@ interface EditFormState {
   website: string;
   linkedin: string;
 }
-
-// Dynamically import components
-const TimeZoneInput = dynamic(() => import("@/components/TimeZoneInput"), {
-  ssr: false,
-  loading: () => <div className="h-[48px] bg-gray-100 animate-pulse rounded" />
-});
-
-const CountryInput = dynamic(() => import("@/components/CountryInput"), {
-  ssr: false,
-  loading: () => <div className="h-[48px] bg-gray-100 animate-pulse rounded" />
-});
 
 export default function page() {
   const menu = ["Profile Summary", "Nexus Jobs", "Payment History"];
@@ -384,7 +373,7 @@ export default function page() {
         >
           <div className="!flex sm:!flex-col h-full">
             <div className="relative w-[50%] sm:w-full h-full">
-              <div className="!px-[0.8rem] pt-[0.8rem] rounded-xl w-full sm:w-auto h-[calc(100%-2rem)]">
+              <div className="!px-[0.8rem] pt-[0.8rem] rounded-xl w-full sm:w-auto h-[calc(100%-2rem)] relative group">
                 <Image
                   src={(() => {
                     const imageUrl = userInfo?.image || dragon.src;
@@ -400,11 +389,12 @@ export default function page() {
                     [@media(max-width:420px)]:min-h-[100px]
                     [@media(max-width:320px)]:min-h-[90px]
                     sm:max-w-full sm:h-[80px]        
-                    md:h-[180px]         
-                    lg:h-[240px]"
+                    md:h-[280px]         
+                    lg:h-[300px]"
                   priority
                   unoptimized
                 />
+                
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -415,15 +405,47 @@ export default function page() {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
-                  className="absolute bottom-2 right-2 sm:hidden bg-white/80 hover:bg-white p-2 rounded-full shadow-md"
+                  className="absolute -bottom-3 right-4 
+                    sm:-bottom-3 sm:right-4
+                    hidden sm:flex sm:items-center sm:gap-2
+                    opacity-0 group-hover:opacity-100
+                    bg-white/90 hover:bg-white
+                    shadow-lg hover:shadow-xl
+                    rounded-md px-4 py-2
+                    text-sm font-semibold
+                    transform translate-y-1 group-hover:translate-y-0
+                    transition-all duration-200 ease-in-out"
                 >
-                  <EditOutlinedIcon className="text-gray-700 text-xl" />
+                  {isUploading ? "Uploading..." : "Change Profile Picture"}
+                </button>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="absolute -bottom-3 right-4
+                    sm:hidden
+                    bg-white/90 hover:bg-white
+                    shadow-lg hover:shadow-xl
+                    rounded-full p-2.5
+                    transition-all duration-200 ease-in-out"
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className="w-4 h-4"
+                  >
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                  </svg>
                 </button>
               </div>
             </div>
 
             <div className="flex-1 px-4 pb-6">
-              <div className="text-2xl sm:text-3xl md:text-4xl font-[600] line-clamp-1 font-myanmar px-3 pt-4">
+              <div className="text-2xl sm:text-3xl md:text-4xl font-[600] line-clamp-1 font-myanmar px-3 pt-9">
                 {userInfo?.name || "Name"}
               </div>
 
@@ -508,7 +530,7 @@ export default function page() {
               <Button
                 variant="contained"
                 onClick={() => setShowEdit(true)}
-                className="!text-second !mx-2 sm:!mx-4 !bg-main !px-2 sm:!px-3 !py-1 sm:!py-2 !text-[10px] sm:!text-xs !normal-case"
+                className="!text-gray-800 !mx-2 sm:!mx-4 !bg-white hover:!bg-gray-50 !px-2 sm:!px-3 !py-1 sm:!py-2 !text-[10px] sm:!text-xs !normal-case !shadow-md hover:!shadow-lg !border !border-gray-100"
               >
                 Edit Profile
               </Button>
