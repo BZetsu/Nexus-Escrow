@@ -445,12 +445,12 @@ export default function page() {
             </div>
 
             <div className="flex-1 px-4 pb-6">
-              <div className="text-2xl sm:text-3xl md:text-4xl font-[600] line-clamp-1 font-myanmar px-3 pt-9">
+              <div className="text-2xl sm:text-3xl md:text-4xl font-[600] line-clamp-1 font-myanmar px-3 pt-4">
                 {userInfo?.name || "Name"}
               </div>
 
               <div className="w-full -mt-1">
-                <div className="border border-gray-200 rounded-md px-3 py-1.5  
+                <div className="border border-gray-200 rounded-md px-3 py-3  
                   w-full flex justify-between items-center 
                   bg-white/50 backdrop-blur-sm">
                   <div className="text-sm sm:text-base md:text-lg text-black/80 font-medium">
