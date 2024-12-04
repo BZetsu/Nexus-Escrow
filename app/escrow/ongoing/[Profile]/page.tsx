@@ -466,7 +466,7 @@ export default function page() {
                 alt={escrow_info?.founderInfo?.name || "Profile"}
                 width={500}
                 height={500}
-                className="w-full h-[180px] [@media(min-width:500px)]:h-[500px] sm:h-[250px] rounded-xl object-cover object-center mt-1"
+                className="w-full h-[180px] [@media(min-width:500px)]:h-[350px] sm:h-[250px] rounded-xl object-cover object-center mt-1"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.src = dragon.src;
