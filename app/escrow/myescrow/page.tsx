@@ -59,10 +59,10 @@ const isPastContract = (es: any) => {
   return isPast;
 };
 
-// Update the shouldShowContract helper function at the top level
+// Update the shouldShowContract helper function
 const shouldShowContract = (contract: any) => {
-  // Only show contracts with status 0 (Not Started)
-  return contract.status === 0;
+  // Show contracts that are either completed (status 6) or terminated (status 7)
+  return contract.status === 6 || contract.status === 7;
 };
 
 export default function page() {
@@ -228,15 +228,15 @@ export default function page() {
                   deadline={Number(el.deadline)}
                   escrow={el.pubkey.toBase58()}
                   createdAt={el.createdAt}
-                  status={status}
+                  status={el.status}
                   type={1}
                   className="w-full p-5 sm:p-8 block"
                 />
               ))
           : openContracts ?
-            // Show only active contracts (not disputes, completed, or terminated)
+            // Show only active contracts (Started and Not Started)
             escrows
-              .filter((es) => es.status < 5 && es.status !== 3)  // Keep all active contracts including status 1 (Contract Started)
+              .filter((es) => es.status === 0 || es.status === 1)  // Status 0 (Not Started) and 1 (Started)
               .map((el, i) => (
                 <CardContract
                   key={i}
