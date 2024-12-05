@@ -54,6 +54,9 @@ interface FounderResponse {
   }>
 }
 
+// Add Discord link constant at the top of the file
+const DISCORD_LINK = "https://discord.gg/VmgUWefjsZ";
+
 export default function page() {
   const [material, setMaterial] = useState<string>("");
   const [deadline, setDeadline] = useState<any>();
@@ -671,10 +674,18 @@ export default function page() {
                         )}
 
                         {applyInfo && escrow_info.status === 5 && (
-                          <div>
+                          <div className="flex flex-col gap-3">
                             <Card className="text-xs text-center !shadow-none !border !border-textColor">
                               Dispute Mode Now!
                             </Card>
+                            
+                            <Button
+                              onClick={() => window.open(DISCORD_LINK, '_blank')}
+                              variant="contained"
+                              className="!text-xs sm:!text-sm !bg-black hover:!bg-gray-800 !px-4 !py-2 !rounded-md !normal-case !text-white !w-full"
+                            >
+                              Resolve Dispute
+                            </Button>
                           </div>
                         )}
 
@@ -688,17 +699,17 @@ export default function page() {
                               type: "spring",
                               stiffness: 500,
                             }}
-                            className="px-4 mt-4 flex flex-col h-full justify-between"
+                            className="px-4 mt-2"
                           >
-                            <Card className="text-xs text-center !shadow-none !border !border-textColor h-[60px] flex items-center justify-center pb-4">
-                              <div className="px-4 translate-y-4">
+                            <Card className="text-xs text-center !shadow-none !border !border-textColor h-[50px] flex items-center justify-center">
+                              <div className="px-4">
                                 Your Submission was rejected you can either Terminate or Dispute
                               </div>
                             </Card>
                             
                             <Stack
                               flexDirection="row"
-                              mt={0}
+                              mt={2}
                               justifyContent="center"
                               alignItems="center"
                               gap={2}
@@ -714,7 +725,9 @@ export default function page() {
 
                               <Button
                                 variant="contained"
-                                className="!text-xs sm:!text-sm !shadow-lg !px-4 !py-2 !rounded-md !bg-white !normal-case !text-second !w-56 !border !border-gray-200 hover:!bg-gray-50 disabled:!opacity-50"
+                                className="!text-xs sm:!text-sm !shadow-lg !px-4 !py-2 !rounded-md !bg-white !normal-case !text-second !w-56 
+                                  !border-2 !border-gray-300/60 hover:!bg-gray-50 disabled:!opacity-50 
+                                  !shadow-gray-200/50"
                                 onClick={() => Tarminat()}
                                 disabled={isDisputing}
                               >
@@ -739,7 +752,13 @@ export default function page() {
                   amount={Number(escrow_info?.amount || 0) / 1000_000}
                   title="Confirmation"
                   messageTitle="Are you sure you want to request dispute??"
-                  messageDescription="To prevent abuse, we charge a dispute resolution fees. Please try as much as possible ro resolve your issue before opening a dispute"
+                  messageDescription={
+                    <>
+                      To prevent abuse, we charge a dispute resolution fees.
+                      <br />
+                      Please try as much as possible to resolve your issue before opening a dispute.
+                    </>
+                  }
                 >
                   <Button
                     onClick={() => Dispute()}
