@@ -248,7 +248,7 @@ export default function page() {
           </Stack>
 
           <Stack
-            py={2}
+            py={1.5}
             px={2.5}
             flexDirection="row"
             justifyContent="space-between"
@@ -324,7 +324,7 @@ export default function page() {
                   onClick={() => setTap(el)}
                   className={`${
                     tap === el ? "!text-black/70" : "!text-gray-400"
-                  } !normal-case md:!text-xs !text-sm !py-3 !px-4 ${
+                  } !normal-case !text-[11px] sm:!text-xs !py-2 !px-3 ${
                     tap === el && "!text-black !font-semibold"
                   }`}
                 >
@@ -344,19 +344,19 @@ export default function page() {
               stiffness: 200,
             }}
           >
-            <Card className="rounded-t-none pb-2">
+            <Card className="rounded-t-none !pb-2 !pt-1">
               <Stack
                 className="text-base font-[500]"
                 flexDirection="row"
                 gap={4}
                 justifyContent="center"
                 alignContent="center"
-                py={2}
+                py={1.5}
               >
-                <div className="font-mynamarButton">
+                <div className="font-mynamarButton text-sm">
                   {ongoing ? ongoing.length : "--"} Ongoing Jobs
                 </div>
-                <div className="font-mynamarButton">
+                <div className="font-mynamarButton text-sm">
                   {completed ? completed.length : "--"} Jobs Completed
                 </div>
               </Stack>
@@ -370,13 +370,13 @@ export default function page() {
             </Card>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 px-1">
-              <div className={`${cardStyle} !py-4 !text-black`}>
+              <div className={`${cardStyle} !py-4 !text-black flex items-center justify-center sm:justify-start`}>
                 {userInfo && output(userInfo.category, "Category")}
               </div>
-              <div className={`${cardStyle} !py-4 !text-black`}>
+              <div className={`${cardStyle} !py-4 !text-black flex items-center justify-center sm:justify-start`}>
                 {userInfo && output(userInfo.country, "Country")}
               </div>
-              <div className={`${cardStyle} !py-4 !text-black`}>
+              <div className={`${cardStyle} !py-4 !text-black flex items-center justify-center sm:justify-start`}>
                 {userInfo && output(userInfo.timezone, "Time Zone")}
               </div>
             </div>
@@ -385,14 +385,16 @@ export default function page() {
               <Button
                 onClick={() => userInfo?.portfolio && window.open(userInfo.portfolio, '_blank')}
                 variant="outlined"
-                className="!normal-case !py-4 !text-black hover:!bg-gray-50 !border-2 !border-gray-300 !rounded-xl !bg-white !font-semibold !shadow-sm"
+                className="!normal-case !py-4 !text-black hover:!bg-gray-50 !border-2 !border-gray-300 
+                  !rounded-xl !bg-white !font-semibold !shadow-sm flex items-center justify-center"
               >
                 Portfolio
               </Button>
               <Button
                 onClick={() => userInfo?.resume && window.open(userInfo.resume, '_blank')}
                 variant="outlined"
-                className="!normal-case !py-4 !text-black hover:!bg-gray-50 !border-2 !border-gray-300 !rounded-xl !bg-white !font-semibold !shadow-sm"
+                className="!normal-case !py-4 !text-black hover:!bg-gray-50 !border-2 !border-gray-300 
+                  !rounded-xl !bg-white !font-semibold !shadow-sm flex items-center justify-center"
               >
                 Resume
               </Button>
