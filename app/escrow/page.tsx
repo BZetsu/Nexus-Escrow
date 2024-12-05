@@ -316,42 +316,14 @@ export default function Page() {
               <div className="text-sm sm:text-base text-textColor font-myanmar">
                 Create new escrow contract
               </div>
-              <Stack flexDirection="row" gap={4} alignItems="center">
-                {(form.ContractName || form.Description || form.Amount || form.Link || form.TelegramLink) && (
-                  <Button
-                    onClick={clearForm}
-                    className="!text-xs !font-medium !capitalize !bg-gray-100 hover:!bg-gray-200 !text-gray-700 !w-fit !min-w-0 !px-3 !py-1"
-                  >
-                    Clear Form
-                  </Button>
-                )}
-                <Stack
-                  flexDirection="row"
-                  gap={0.3}
-                  className="text-xs sm:text-sm pt-[0.2rem]"
-                  alignItems="flex-start"
+              {(form.ContractName || form.Description || form.Amount || form.Link || form.TelegramLink) && (
+                <Button
+                  onClick={clearForm}
+                  className="!text-xs !font-medium !capitalize !bg-gray-100 hover:!bg-gray-200 !text-gray-700 !w-fit !min-w-0 !px-3 !py-1"
                 >
-                  <div className={`transition-colors ${!form.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
-                    Public
-                  </div>
-                  <div className="mt-[-6px]">
-                    <Switch
-                      color="warning"
-                      checked={form.private}
-                      onChange={(e) => {
-                        setForm((prevForm: FormState) => ({
-                          ...prevForm,
-                          private: e.target.checked,
-                        }));
-                      }}
-                      size="small"
-                    />
-                  </div>
-                  <div className={`transition-colors ${form.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
-                    Private
-                  </div>
-                </Stack>
-              </Stack>
+                  Clear Form
+                </Button>
+              )}
             </Stack>
 
             <Stack
