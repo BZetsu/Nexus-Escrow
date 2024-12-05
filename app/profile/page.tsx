@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import Image from "next/image";
 import React, { useEffect, useState, useRef } from "react";
-import dragon from "@/public/dragon.svg";
+import dragon from "@/public/Image.jpg";
 import { motion } from "framer-motion";
 import { cardStyle, inputMuiFontSize, inputStyle } from "@/lib/styles/styles";
 import { profileOverview } from "@/lib/fakedata/Data";
@@ -476,11 +476,11 @@ export default function page() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-2 gap-4 mt-[14px] ">
-          <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold`}>
+        <div className="grid grid-cols-2 gap-4 mt-[14px]">
+          <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold flex items-center justify-center sm:justify-start`}>
             {userInfo && output(userInfo.levelOfExpertise, "Level Of Expertise")}
           </div>
-          <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold flex items-center justify-between`}>
+          <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold flex items-center justify-between px-4 sm:px-3`}>
             <div className="flex items-center gap-2">
               <img 
                 alt="coin" 
@@ -568,22 +568,22 @@ export default function page() {
             </Card>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-[14px] px-1">
-              <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold`}>
+              <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold flex items-center justify-center sm:justify-start`}>
                 {userInfo && output(userInfo.category, "Category")}
               </div>
-              <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold`}>
+              <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold flex items-center justify-center sm:justify-start`}>
                 {userInfo && output(userInfo.country, "Country")}
               </div>
-              <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold`}>
+              <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold flex items-center justify-center sm:justify-start`}>
                 {userInfo && output(userInfo.timeZone, "Time Zone")}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 px-1">
-              <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold`}>
+              <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold flex items-center justify-center sm:justify-start`}>
                 {userInfo && stringLengthHandle(output(userInfo.portfolio, "Portfolio")!)}
               </div>
-              <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold`}>
+              <div className={`${cardStyle} !py-4 !text-[#575757] font-semibold flex items-center justify-center sm:justify-start`}>
                 {userInfo && stringLengthHandle(output(userInfo.resume, "Resume")!)}
               </div>
             </div>
