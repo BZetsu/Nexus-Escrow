@@ -22,6 +22,33 @@ import ApproveModal from "./ApproveModal";
 // Add Discord link constant at the top
 const DISCORD_LINK = "https://discord.gg/VmgUWefjsZ";
 
+// Add this helper function at the top of the file
+const calculateDaysLeft = (lastStatusChange: number): number => {
+  if (!lastStatusChange) {
+    console.log('No lastStatusChange timestamp provided');
+    return 14; // Default to 14 days if no timestamp
+  }
+
+  try {
+    const now = Math.floor(Date.now() / 1000);
+    const fourteenDays = 14 * 24 * 60 * 60; // 14 days in seconds
+    const deadline = lastStatusChange + fourteenDays;
+    const daysLeft = Math.ceil((deadline - now) / (24 * 60 * 60));
+    
+    console.log('Countdown calculation:', {
+      now,
+      lastStatusChange,
+      deadline,
+      daysLeft
+    });
+
+    return Math.max(0, Math.min(daysLeft, 14)); // Ensure between 0 and 14 days
+  } catch (error) {
+    console.error('Error calculating days left:', error);
+    return 14;
+  }
+};
+
 export default function CardAccordionAccept({
   children,
   data,
@@ -213,22 +240,21 @@ export default function CardAccordionAccept({
           ) : (
             <div className="w-full p-4 text-center rounded-lg border border-black/30 mt-9 text-xs ">
               {
-              escrowInfo.status == 4 ?
-              "You rejected the submission, please click on terminate to Dispute and End the contract or Request New Submission"
-              :
-              (escrowInfo.status == 5 ?
-              "You are on Dispute Phase Now"
-              :
-              (escrowInfo.status == 9 ?
-                "Freelancer has made submission, please respond within the next 14 days or funds will be released to the contractor"
-                :
-                (escrowInfo.status == 3 ?
+                escrowInfo.status == 4 ?
+                  "You rejected the submission, please click on terminate to Dispute and End the contract or Request New Submission"
+                : escrowInfo.status == 5 ?
+                  "You are on Dispute Phase Now"
+                : escrowInfo.status == 9 ?
+                  <>
+                    {data[0]?.userName || "Freelancer"} has made a submission. 
+                    <br />
+                    <span className="font-semibold text-red-500">
+                      {calculateDaysLeft(Number(escrowInfo.lastStatusChange))} days
+                    </span> remaining to respond, or funds will be automatically released to the contractor.
+                  </>
+                : escrowInfo.status == 3 ?
                   "You approved the submission, payment was made and contract terminated"
-                  :
-                  "Select Freelancer to start contract with"
-                )
-              )
-            )
+                : "Select Freelancer to start contract with"
               }
             </div>
           )}
@@ -307,14 +333,14 @@ export default function CardAccordionAccept({
               <Button
                 variant="contained"
                 onClick={() => setShowDisputeModal(true)}
-                className="!normal-case !text-xs !py-3 !bg-red-700 !text-white !col-span-1 !rounded-md"
+                className="!normal-case !text-xs !py-2 !bg-red-700 !text-white !col-span-1 !rounded-md"
               >
                 Dispute and Request Refund
               </Button>
               <Button
                 variant="contained"
                 onClick={() => setShowNewSubmissionModal(true)}
-                className="!normal-case !text-xs !py-3 !bg-green-500 !text-white !col-span-1 !rounded-md"
+                className="!normal-case !text-xs !py-2 !bg-green-500 !text-white !col-span-1 !rounded-md"
               >
                 Request New Submission
               </Button>
