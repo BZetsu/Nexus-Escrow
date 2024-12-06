@@ -2,12 +2,11 @@
 
 import { formatTime } from "@/lib/utils/time_formatter";
 import coin from "@/public/coin.svg";
-import { Stack } from "@mui/material";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { Button, Modal } from "@mui/material";
+import { FaXTwitter } from "react-icons/fa6";
 
 // interface CardContractType {
 //   contractName: string;
@@ -24,7 +23,144 @@ interface ContractSummary {
   status: string;
   description?: string;
   materials?: string;
+  founder?: string;
+  contractor?: string;
+  submissions?: Array<{
+    date: number;
+    status: "approved" | "rejected";
+    materials?: string;
+  }>;
+  terminationReason?: string;
+  lastStatusChange?: number;
 }
+
+// Add interface for submission type
+interface Submission {
+  date: number;
+  status: "approved" | "rejected";
+  materials?: string;
+}
+
+// Add interface for Modal props
+interface ModalProps {
+  open: boolean;
+  onClose: () => void;
+  children: React.ReactNode;
+  className?: string;
+}
+
+// Add interface for timeline events
+interface TimelineEvent {
+  date: number;
+  status: string;
+  type: 'created' | 'started' | 'submitted' | 'approved' | 'rejected' | 'completed' | 'terminated';
+  contractor?: string;
+}
+
+const formatEventDate = (timestamp: number): string => {
+  try {
+    // Validate timestamp
+    if (!timestamp || isNaN(timestamp)) {
+      return "Invalid date";
+    }
+
+    // Ensure timestamp is in milliseconds
+    const timeInMs = timestamp * 1000;
+    
+    // Validate date range
+    if (timeInMs < 0 || timeInMs > 8640000000000000) { // Max valid JS date
+      return "Invalid date";
+    }
+
+    const date = new Date(timeInMs);
+    
+    // Validate date object
+    if (date.toString() === "Invalid Date") {
+      return "Invalid date";
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }).format(date);
+  } catch (error) {
+    console.error('Date formatting error:', error);
+    return "Invalid date";
+  }
+};
+
+const Timeline = ({ events }: { events: TimelineEvent[] }) => (
+  <div className="relative space-y-4 py-4">
+    {events.map((event, i) => (
+      <div key={i} className="relative pl-6 pb-4">
+        {i !== events.length - 1 && (
+          <div className="absolute left-[11px] top-6 w-[2px] h-full bg-gray-200" />
+        )}
+        
+        <div className={`absolute left-0 top-2 w-6 h-6 rounded-full flex items-center justify-center ${
+          event.type === 'created' ? 'bg-blue-100' :
+          event.type === 'started' ? 'bg-purple-100' :
+          event.type === 'submitted' ? 'bg-yellow-100' :
+          event.type === 'approved' ? 'bg-green-100' :
+          event.type === 'completed' ? 'bg-green-100' :
+          'bg-red-100'
+        }`}>
+          <div className={`w-3 h-3 rounded-full ${
+            event.type === 'created' ? 'bg-blue-500' :
+            event.type === 'started' ? 'bg-purple-500' :
+            event.type === 'submitted' ? 'bg-yellow-500' :
+            event.type === 'approved' ? 'bg-green-500' :
+            event.type === 'completed' ? 'bg-green-600' :
+            'bg-red-600'
+          }`} />
+        </div>
+        
+        <div className="ml-4">
+          <div className="text-sm font-medium">
+            {event.status}
+            {event.contractor && <span className="text-gray-500 text-xs ml-1">({event.contractor})</span>}
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            {formatEventDate(event.date)}
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const Modal: React.FC<ModalProps> = ({ open, onClose, children, className = "" }) => {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className={`bg-white rounded-xl p-6 max-w-md w-[95%] max-h-[90vh] overflow-y-auto ${className}`}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Add this helper function to calculate duration
+const calculateDuration = (startDate: number, endDate: number): string => {
+  // Convert to milliseconds and get difference
+  const diffInSeconds = endDate - startDate;
+  
+  // Handle invalid dates
+  if (diffInSeconds < 0) return "N/A";
+  
+  const days = Math.floor(diffInSeconds / (24 * 60 * 60));
+  const hours = Math.floor((diffInSeconds % (24 * 60 * 60)) / (60 * 60));
+  
+  if (days > 0) {
+    return `${days} day${days !== 1 ? 's' : ''}`;
+  } else {
+    return `${hours} hour${hours !== 1 ? 's' : ''}`;
+  }
+};
 
 export default function CardContract({
   contractName,
@@ -39,8 +175,10 @@ export default function CardContract({
   description,
   materials,
   founder,
-  freelancer,
-  escrowInfo
+  contractor,
+  submissions,
+  terminationReason,
+  lastStatusChange
 }: any) {
   const router = useRouter();
   const path = usePathname();
@@ -108,47 +246,57 @@ export default function CardContract({
     
     const statusNum = Number(status);
     
-    // Handle completed and disputes first (highest priority)
-    if (statusNum === 6 || statusNum === 3) {
-      return "Completed";
-    }
-    
-    if (statusNum === 5) {
-      return "In Dispute";
-    }
-    
-    if (statusNum === 7) {
-      return "Terminated";
-    }
-    
-    // Then handle ongoing page specific statuses
-    if (isOngoingPage) {
+    // For myescrow page
+    if (path.includes('myescrow')) {
       switch(statusNum) {
-        case 1:
-        case 2:
-          return "Contract Started";
+        case 3:
+          return <span className="font-semibold text-green-500">Approved</span>;
+        case 6:
+          return <span className="font-semibold text-green-500">Approved</span>;
         case 9:
-          return "Submitted";
-        case 4:
-          return "Rejected";
-        case 0:
-          return "Contract Started";
-        default:
-          return "Contract Started";
-      }
-    } else {
-      // For non-ongoing pages
-      switch(statusNum) {
+          return <span className="italic text-black">Awaiting Response...</span>;
+        case 5:
+          return "In Dispute";
+        case 7:
+          return "Terminated";
         case 1:
           return "Contract Started";
-        case 2:
-          return "Work Submitted";
-        case 4:
-          return "Work Resubmitted";
         case 0:
         default:
           return "Not Started";
       }
+    }
+    
+    // For ongoing page
+    if (isOngoingPage) {
+      switch(statusNum) {
+        case 3:
+        case 6:
+          return <span className="font-semibold text-green-500">Approved</span>;
+        case 9:
+          return "Submitted";
+        case 1:
+        case 2:
+          return "Contract Started";
+        case 4:
+          return "Rejected";
+        case 0:
+        default:
+          return "Contract Started";
+      }
+    }
+
+    // Default status handling
+    switch(statusNum) {
+      case 1:
+        return "Contract Started";
+      case 2:
+        return "Work Submitted";
+      case 4:
+        return "Work Resubmitted";
+      case 0:
+      default:
+        return "Not Started";
     }
   };
 
@@ -162,7 +310,7 @@ export default function CardContract({
   const [showSummary, setShowSummary] = useState(false);
 
   const handleClick = () => {
-    if (getStatus(status) === "Completed" || status === 6 || status === 3) {
+    if (getStatus(status) === "Completed" || status === 6 || status === 3 || status === 7) {
       setShowSummary(true);
     } else {
       if (type === 3) {
@@ -175,68 +323,71 @@ export default function CardContract({
     }
   };
 
-  // Add new helper function to get detailed status history
-  const getContractHistory = (escrowInfo: any) => {
-    if (!escrowInfo) {
-      return [{
-        event: 'Contract Created',
-        date: new Date(createdAt * 1000).toLocaleDateString(),
-        details: 'Contract details not available'
-      }];
-    }
-
-    const history = [];
-    
-    // Add contract start
-    history.push({
-      event: 'Contract Created',
-      date: new Date((escrowInfo.createdAt || createdAt) * 1000).toLocaleDateString(),
-      details: `Contract created by ${escrowInfo?.founderInfo?.name || founder || 'Unknown'}`
+  const getTimelineEvents = (): TimelineEvent[] => {
+    console.log('Timeline Debug:', {
+      status,
+      lastStatusChange,
+      contractor,
+      createdAt
     });
 
-    // Add contractor assignment
-    if (escrowInfo?.reciever) {
-      history.push({
-        event: 'Contractor Assigned', 
-        date: new Date((escrowInfo.assignedAt || createdAt) * 1000).toLocaleDateString(),
-        details: `${escrowInfo?.freelancerInfo?.name || freelancer || 'Unknown'} was assigned to the contract`
+    const events: TimelineEvent[] = [
+      {
+        date: Math.floor(createdAt / 1000),
+        status: 'Contract Created',
+        type: 'created'
+      }
+    ];
+
+    // Add contract started event if there's a contractor
+    if (contractor && contractor !== "Not available") {
+      events.push({
+        date: Math.floor((lastStatusChange || createdAt) / 1000),
+        status: `${contractor} Hired`,
+        type: 'started',
+        contractor: contractor
       });
     }
 
-    // Add submission history
-    if (escrowInfo?.submitted) {
-      history.push({
-        event: 'Work Submitted',
-        date: new Date((escrowInfo.submittedAt || deadline) * 1000).toLocaleDateString(),
-        details: escrowInfo.materials ? 'Submission included materials' : 'No materials attached'
+    // Add submission event if status is 9
+    if (status === 9) {
+      console.log('Adding submission event:', {
+        date: Math.floor((lastStatusChange || Date.now()) / 1000),
+        contractor
+      });
+      events.push({
+        date: Math.floor((lastStatusChange || Date.now()) / 1000),
+        status: `${contractor} Made Submission`,
+        type: 'submitted',
+        contractor: contractor
       });
     }
 
-    // Add rejection history
-    if (escrowInfo.status === 4) {
-      history.push({
-        event: 'Submission Rejected',
-        date: new Date(escrowInfo.rejectedAt * 1000).toLocaleDateString(),
-        details: 'Work submission was rejected by client'
+    // Add completion/termination events
+    if (status === 6 || status === 3) {
+      events.push({
+        date: Math.floor((lastStatusChange || Date.now()) / 1000),
+        status: 'Contract Completed',
+        type: 'completed'
+      });
+    } else if (status === 7) {
+      events.push({
+        date: Math.floor((lastStatusChange || Date.now()) / 1000),
+        status: 'Contract Terminated',
+        type: 'terminated'
       });
     }
 
-    // Add completion/termination
-    if (escrowInfo.status === 6 || escrowInfo.status === 3) {
-      history.push({
-        event: 'Contract Completed',
-        date: new Date(escrowInfo.completedAt * 1000).toLocaleDateString(),
-        details: 'Work was approved and payment released'
+    // Sort events by date and ensure no duplicate timestamps
+    return events
+      .sort((a, b) => a.date - b.date)
+      .map((event, index, array) => {
+        // If this event has the same timestamp as the previous one, add 1 second
+        if (index > 0 && event.date === array[index - 1].date) {
+          return { ...event, date: event.date + 1 };
+        }
+        return event;
       });
-    } else if (escrowInfo.status === 7) {
-      history.push({
-        event: 'Contract Terminated',
-        date: new Date(escrowInfo.terminatedAt * 1000).toLocaleDateString(),
-        details: 'Contract was terminated'
-      });
-    }
-
-    return history;
   };
 
   return (
@@ -307,88 +458,134 @@ export default function CardContract({
         </div>
       </motion.button>
 
-      <Modal
-        open={showSummary}
-        onClose={() => setShowSummary(false)}
-        className="grid place-items-center"
-      >
-        <div className="bg-white rounded-xl p-6 max-w-md w-[95%] max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-start mb-4">
+      <Modal open={showSummary} onClose={() => setShowSummary(false)}>
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex justify-between items-start">
             <h2 className="text-xl font-semibold">{contractName}</h2>
-            <button 
-              onClick={() => setShowSummary(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-          </div>
-          
-          <div className="space-y-4">
-            {/* Contract Parties */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm text-gray-500 mb-2">Contract Parties</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-gray-500">Client</p>
-                  <p className="font-semibold">{founder || "Unknown"}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Contractor</p>
-                  <p className="font-semibold">{freelancer || "Unknown"}</p>
-                </div>
-              </div>
+            <div className="flex items-center gap-4">
+              {/* Add View Full Details button */}
+              <button
+                onClick={() => {
+                  if (type === 3) {
+                    router.push(`/escrow/ongoing/${escrow}`);
+                  } else if (type === 2) {
+                    router.push(`/escrow/${escrow}`);
+                  } else {
+                    router.push(`/escrow/myescrow/${escrow}`);
+                  }
+                }}
+                className="text-sm text-blue-500 hover:text-blue-600"
+              >
+                View Full Details
+              </button>
+              <button onClick={() => setShowSummary(false)} className="text-gray-500 hover:text-gray-700">
+                ✕
+              </button>
             </div>
+          </div>
 
-            {/* Contract Value */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm text-gray-500 mb-1">Contract Value</h3>
+          {/* Contract Details */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-sm text-gray-500 mb-1">Contract Details</h3>
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Image src={coin} alt="USDC" width={20} height={20} />
                 <p className="text-lg font-semibold">{amount / 1000_000} USDC</p>
               </div>
+              <p className={`text-sm font-semibold ${
+                status === 6 || status === 3 ? 'text-green-500' : 
+                status === 7 ? 'text-red-500' : 'text-gray-500'
+              }`}>
+                {getStatus(status)}
+              </p>
             </div>
-            
-            {/* Timeline */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm text-gray-500 mb-1">Timeline</h3>
-              <div className="space-y-1">
-                <p>Started: {new Date(createdAt * 1000).toLocaleDateString()}</p>
-                <p>Completed: {new Date(deadline * 1000).toLocaleDateString()}</p>
-                <p>Duration: {Math.ceil((deadline - createdAt) / (24 * 60 * 60))} days</p>
+          </div>
+
+          {/* Timeline */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-sm text-gray-500 mb-3">Contract Timeline</h3>
+            <Timeline events={getTimelineEvents()} />
+          </div>
+
+          {/* Participants */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-sm text-gray-500 mb-1">Participants</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Contract Creator:</span>
+                <span className="font-medium">{founder || "Not available"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Contractor:</span>
+                <span className="font-medium">{contractor || "Not available"}</span>
               </div>
             </div>
+          </div>
 
-            {/* Contract History */}
+          {/* Timeline */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-sm text-gray-500 mb-1">Timeline</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Started:</span>
+                <span>{formatEventDate(Math.floor(createdAt / 1000))}</span>
+              </div>
+              {(status === 6 || status === 3 || status === 7) && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span>{status === 7 ? 'Terminated:' : 'Completed:'}</span>
+                    <span>{formatEventDate(Math.floor((lastStatusChange || Date.now()) / 1000))}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Duration:</span>
+                    <span>{calculateDuration(
+                      Math.floor(createdAt / 1000),
+                      Math.floor((lastStatusChange || Date.now()) / 1000)
+                    )}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {submissions && submissions.length > 0 && (
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm text-gray-500 mb-3">Contract History</h3>
+              <h3 className="text-sm text-gray-500 mb-2">Submission History</h3>
               <div className="space-y-3">
-                {getContractHistory(escrowInfo).map((event, index) => (
-                  <div key={index} className="border-l-2 border-gray-300 pl-3 py-1">
-                    <p className="text-sm font-semibold">{event.event}</p>
-                    <p className="text-xs text-gray-500">{event.date}</p>
-                    <p className="text-xs text-gray-600 mt-1">{event.details}</p>
+                {submissions.map((sub: Submission, i: number) => (
+                  <div key={i} className="text-sm border-l-2 pl-3 py-1
+                    ${sub.status === 'approved' ? 'border-green-500' : 'border-red-500'}">
+                    <div className="flex justify-between">
+                      <span>{new Date(sub.date * 1000).toLocaleDateString()}</span>
+                      <span className={sub.status === 'approved' ? 'text-green-500' : 'text-red-500'}>
+                        {sub.status === 'approved' ? 'Approved' : 'Rejected'}
+                      </span>
+                    </div>
+                    {sub.materials && (
+                      <a href={sub.materials} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:text-blue-600 block mt-1">
+                        View Submission
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
             </div>
+          )}
 
-            {/* Final Status */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-sm text-gray-500 mb-1">Final Status</h3>
-              <p className={`
-                text-sm font-semibold
-                ${status === 6 || status === 3 ? 'text-green-500' : 
-                  status === 7 ? 'text-red-500' : 'text-gray-500'}
-              `}>
-                {getStatus(status)}
-              </p>
-              {status === 7 && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Contract was terminated before completion
-                </p>
+          {(status === 6 || status === 3 || status === 7) && (
+            <div className="opacity-50 pointer-events-none">
+              <div className="text-sm text-gray-500 mb-2">Contract is {status === 7 ? 'terminated' : 'completed'}</div>
+              {status === 7 && terminationReason && (
+                <div className="text-sm text-red-500 mb-4">
+                  Reason: {terminationReason}
+                </div>
               )}
             </div>
-          </div>
+          )}
         </div>
       </Modal>
     </>

@@ -27,11 +27,12 @@ export async function initEscrow(
   description: string,
   amount: number,
   deadline: number,
-  privat: boolean,
+  private_flag: boolean,
   wallet: any
 ) {
+  console.log("Initializing escrow with private flag:", private_flag);
   console.log("privat")
-  console.log(privat)
+  console.log(private_flag)
   const provider = new AnchorProvider(connection, anchorWallet, {
     preflightCommitment: 'processed',
   });
@@ -115,7 +116,7 @@ export async function initEscrow(
     materials,
     description,
     escrowAddress: escrow.toBase58(),
-    private: privat
+    private: private_flag
   });
   //   if(!apiResponse) {console.log('Do something')}
 

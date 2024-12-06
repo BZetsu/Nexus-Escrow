@@ -26,6 +26,9 @@ import { useEffect, useState, useCallback } from "react";
 import { FaDiscord, FaXTwitter } from "react-icons/fa6";
 import Link from 'next/link';
 
+const NEXUS_MLS_TWITTER = "https://x.com/Nexus_mls";
+const DISCORD_LINK = "https://discord.gg/VmgUWefjsZ";
+
 let navigation: NavigationType[] = [
   { name: "Nexus Explore", link: "/", current: true },
   // { name: "Documents", link: "/documents" },
@@ -293,8 +296,14 @@ export default function Example() {
                         <div className="text-white p-5">
                           <div className="text-xs">Socials</div>
                           <div className="mt-5 flex items-center gap-3 text-2xl">
-                            <FaXTwitter />
-                            <FaDiscord />
+                            <FaXTwitter
+                              onClick={() => window.open(NEXUS_MLS_TWITTER, '_blank')}
+                              className="cursor-pointer hover:text-blue-400 transition-colors duration-200"
+                            />
+                            <FaDiscord
+                              onClick={() => window.open(DISCORD_LINK, '_blank')}
+                              className="cursor-pointer hover:text-indigo-400 transition-colors duration-200"
+                            />
                           </div>
                         </div>
                       </motion.div>
@@ -443,8 +452,14 @@ export default function Example() {
                   <div className="text-white p-5">
                     <div className="text-xs">Socials</div>
                     <div className="mt-5 flex items-center gap-3 text-2xl">
-                      <FaXTwitter />
-                      <FaDiscord />
+                      <FaXTwitter
+                        onClick={() => window.open(NEXUS_MLS_TWITTER, '_blank')}
+                        className="cursor-pointer hover:text-blue-400 transition-colors duration-200"
+                      />
+                      <FaDiscord
+                        onClick={() => window.open(DISCORD_LINK, '_blank')}
+                        className="cursor-pointer hover:text-indigo-400 transition-colors duration-200"
+                      />
                     </div>
                   </div>
                 </motion.div>

@@ -187,38 +187,75 @@ export default function Page() {
   };
 
   const [isCreating, setIsCreating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
-    if (isCreating) return;
-    
-    try {
-      setIsCreating(true);
-      console.log("Creating contract with private flag:", form.private);
-      notify_laoding("Creating Escrow Contract...");
+  // Move clearForm before debouncedSubmit
+  const clearForm = useCallback(() => {
+    localStorage.removeItem(FORM_STORAGE_KEY);
+    setForm({
+      ContractName: "",
+      TelegramLink: "",
+      DeadLine: 0,
+      Amount: 0,
+      Link: "",
+      Description: "",
+      private: false,
+    });
+    setTimeValue("");
+  }, []);
 
-      await initEscrow(
-        anchorWallet!,
-        connection,
-        form.ContractName,
-        form.TelegramLink,
-        form.Link,
-        form.Description,
-        form.Amount,
-        form.DeadLine,
-        form.private,
-        wallet
-      );
+  // Now debouncedSubmit can use clearForm
+  const debouncedSubmit = useCallback(
+    debounce(async () => {
+      if (isCreating) return;
       
-      notify_delete();
-      notify_success("Escrow Contract Created!");
-      clearForm();
-      router.push('/escrow/myescrow');
+      try {
+        setIsCreating(true);
+        notify_laoding("Creating Escrow Contract...");
 
-    } catch (e) {
-      notify_delete();
-      notify_error("Transaction Failed!");
-    } finally {
-      setIsCreating(false);
+        // Split the heavy work into smaller chunks
+        const initEscrowPromise = initEscrow(
+          anchorWallet!,
+          connection,
+          form.ContractName,
+          form.TelegramLink,
+          form.Link,
+          form.Description,
+          form.Amount,
+          form.DeadLine,
+          form.private,
+          wallet
+        );
+
+        // Use requestAnimationFrame to prevent UI blocking
+        requestAnimationFrame(async () => {
+          try {
+            await initEscrowPromise;
+            notify_delete();
+            notify_success("Escrow Contract Created!");
+            clearForm();
+            router.push('/escrow/myescrow');
+          } catch (e) {
+            notify_delete();
+            notify_error("Transaction Failed!");
+          } finally {
+            setIsCreating(false);
+          }
+        });
+
+      } catch (e) {
+        notify_delete();
+        notify_error("Transaction Failed!");
+        setIsCreating(false);
+      }
+    }, 300),
+    [anchorWallet, connection, form, wallet, clearForm, router]
+  );
+
+  const handleSubmit = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isCreating) {
+      debouncedSubmit();
     }
   };
 
@@ -292,20 +329,11 @@ export default function Page() {
     }
   }, [form]);
 
-  // Add function to clear form after successful submission
-  const clearForm = useCallback(() => {
-    localStorage.removeItem(FORM_STORAGE_KEY);
-    setForm({
-      ContractName: "",
-      TelegramLink: "",
-      DeadLine: 0,
-      Amount: 0,
-      Link: "",
-      Description: "",
-      private: false,
-    });
-    setTimeValue("");
-  }, []);
+  useEffect(() => {
+    return () => {
+      debouncedSubmit.cancel();
+    };
+  }, [debouncedSubmit]);
 
   return (
     <div>
@@ -447,10 +475,17 @@ export default function Page() {
             <Stack mt={3} alignItems="center">
               <Button
                 onClick={handleSubmit}
-                disabled={isDisabled() || isCreating}
-                className="!text-sm !font-semibold !capitalize !bg-main !text-second !w-fit disabled:!bg-main/50"
+                disabled={isDisabled() || isCreating || isSubmitting}
+                className="!text-sm !font-semibold !capitalize !bg-main !text-second !w-fit disabled:!bg-main/50 relative"
               >
-                {isCreating ? "Creating..." : "Submit"}
+                {isCreating || isSubmitting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>
+                    Creating...
+                  </span>
+                ) : (
+                  "Submit"
+                )}
               </Button>
             </Stack>
           </Card>

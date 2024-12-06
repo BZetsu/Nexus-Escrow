@@ -36,6 +36,22 @@ import { USER_PREFIX } from "@/lib/constants/constants";
 import CountdownTimer from "@/components/CountdownTimer";
 const idl = require("@/data/nexus.json");
 
+interface EscrowResponse {
+  data: {
+    description: string;
+    telegramLink: string;
+    private: boolean;
+  }
+}
+
+interface FreelancerResponse {
+  data: Array<{
+    userId: string;
+    address: string;
+    name: string;
+  }>;
+}
+
 // Add loading component
 const LoadingState = () => (
   <div className="animate-pulse">
@@ -414,56 +430,113 @@ export default function page() {
 
   const privates = async (privat: boolean) => {
     try {
-      notify_laoding("Switching Privacy...!")
+      notify_laoding("Switching Privacy...");
       const address = pathname.replace("/escrow/myescrow/", "");
-      console.log(escrowDateInfo)
-      console.log(privat);
       
+      const currentEscrow = await backendApi.get<EscrowResponse>(`/escrow/${address}`);
+      const currentData = currentEscrow.data;
+
       const apiResponse = await backendApi.patch(`escrow/update/${address}`,
         {
           deadline: Number(escrowInfo.deadline),
-          telegramLink: "escrowInfo.telegramLink",
+          description: currentData.description,
+          telegramLink: currentData.telegramLink,
           private: privat
         }
       );
-      setEscrowDateInfo((prevForm:  any) => ({
-          ...prevForm,
-          private: privat,
-        }))
-      console.log(apiResponse);
+      
+      setEscrowDateInfo((prevForm: any) => ({
+        ...prevForm,
+        private: privat,
+      }));
+      
       notify_delete();
-      notify_success("Privacy Switched!")
+      notify_success("Privacy Switched!");
     } catch (e) {
       notify_delete();
       notify_error("Switch Failed!");
       console.log(e);
     }
-  }
+  };
 
   const approveSubmit = async () => {
     try {
-      notify_laoding("Approving Submission...!");
-      console.log(escrowInfo);
-      console.log(escrowInfo.escrow.toBase58());
-      console.log(escrowInfo.freelancerInfo.address.toBase58());
+      // Debug logs to see what we're working with
+      console.log("Approval Debug:", {
+        escrowInfo,
+        freelancerInfo: escrowInfo?.freelancerInfo,
+        applys,
+        escrowDateInfo
+      });
+
+      // Get the current freelancer from applys array
+      const currentFreelancer = escrowInfo?.reciever 
+        ? applys?.find((ap: any) => ap.user.toBase58() === escrowInfo.reciever.toBase58())
+        : null;
+
+      console.log("Current Freelancer:", currentFreelancer);
+
+      // Add validation checks with more specific error messages
+      if (!escrowInfo) {
+        notify_error("Missing escrow information!");
+        return;
+      }
+
+      if (!escrowInfo.escrow) {
+        notify_error("Invalid escrow address!");
+        return;
+      }
+
+      if (!currentFreelancer || !currentFreelancer.user) {
+        notify_error("No freelancer selected for this contract!");
+        return;
+      }
+
+      // Get freelancer's wallet address from the database
+      const freelancerResponse = await backendApi.get<FreelancerResponse>(`/nexus-user`);
+      console.log("API Response:", freelancerResponse); // Debug log
+
+      // Check if response exists and has the expected structure
+      if (!freelancerResponse || !freelancerResponse.data) {
+        notify_error("Failed to fetch freelancer data!");
+        return;
+      }
+
+      const freelancerData = freelancerResponse.data.find(
+        (user: any) => user.userId === currentFreelancer.user.toBase58()
+      );
+
+      if (!freelancerData || !freelancerData.address) {
+        notify_error("Could not find freelancer's wallet address!");
+        return;
+      }
+
+      notify_laoding("Approving Submission...");
+
+      console.log("Payment Details:", {
+        escrowAddress: escrowInfo.escrow.toBase58(),
+        freelancerUserId: currentFreelancer.user.toBase58(),
+        freelancerWalletAddress: freelancerData.address
+      });
 
       const tx = await approvePayment(
         anchorWallet,
         connection,
         wallet,
         escrowInfo.escrow,
-        escrowInfo.freelancerInfo.address
+        new web3.PublicKey(freelancerData.address) // Use wallet address instead of userId
       );
+
       notify_delete();
       notify_success("Submission Approved!");
       setShowApproveSubmit(false);
       await getEscrowInfosss();
       await getApplys();
       window.location.reload();
-    } catch (e) {
+    } catch (e: any) {
+      console.error("Approval Error:", e);
       notify_delete();
-      notify_error("Approval Failed!");   
-      console.log(e);
+      notify_error("Approval Failed: " + (e.message || "Unknown error"));
     }
   };
 
@@ -669,23 +742,25 @@ export default function page() {
                 <div className="text-xs sm:text-sm text-textColor">
                   Description
                 </div>
-                <button onClick={handleDescriptionEdit}>
-                  <FaEdit className="text-lg text-textColor opacity-30" />
-                </button>
-              </div>
-              <div className="text-xs sm:text-sm mt-3 leading-7 min-h-24 py-2">
-                {isDescriptionEditing ? (
-                  <input
-                    type="text"
-                    ref={descriptionInput}
-                    className="text-base line-clamp-1 sm:text-sm font-semibold font-myanmarButton h-6 border-0 focus:outline-none"
-                    placeholder="Enter a new description"
-                    value={descriptionInput}
-                    onChange={(e) => setDescriptionInput(e.target.value)}
-                  />
-                ) : (
-                  <div>{descriptionInput}</div>
+                {escrowInfo && escrowInfo.status !== 6 && escrowInfo.status !== 3 && escrowInfo.status !== 7 && (
+                  <button onClick={handleDescriptionEdit}>
+                    <FaEdit className="text-lg text-textColor opacity-30" />
+                  </button>
                 )}
+              </div>
+              <div 
+                className={`text-xs sm:text-sm mt-3 leading-7 min-h-24 py-2 ${
+                  (escrowInfo?.status === 6 || escrowInfo?.status === 3 || escrowInfo?.status === 7) 
+                    ? 'cursor-pointer hover:bg-gray-50 rounded-md p-2 transition-colors' 
+                    : ''
+                }`}
+                onClick={() => {
+                  if (escrowInfo?.status === 6 || escrowInfo?.status === 3 || escrowInfo?.status === 7) {
+                    setIsDescriptionModalOpen(true);
+                  }
+                }}
+              >
+                {descriptionInput}
               </div>
             </Card>
 
@@ -704,10 +779,11 @@ export default function page() {
                       </div>
                       <Switch
                         checked={escrowDateInfo.private}
-                        onChange={(e) => {
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                           privates(e.target.checked)
                         }}
                         className="-mt-[6px]"
+                        disabled={escrowInfo?.status === 6 || escrowInfo?.status === 3 || escrowInfo?.status === 7}
                       />
                       <div className={`transition-colors ${escrowDateInfo.private ? 'text-black font-semibold' : 'text-gray-500'}`}>
                         Private
@@ -726,15 +802,21 @@ export default function page() {
                   <div className="mt-auto pt-4 border-t">
                     <div className="text-sm text-gray-600 mb-2 flex items-center justify-between">
                       <span>Deadline</span>
-                      <IconButton 
-                        onClick={() => setOpen(true)}
-                        className="-mr-2"
-                      >
-                        <EditOutlinedIcon className="text-textColor text-base opacity-30" />
-                      </IconButton>
+                      {escrowInfo && escrowInfo.status !== 6 && escrowInfo.status !== 3 && escrowInfo.status !== 7 && (
+                        <IconButton 
+                          onClick={() => setOpen(true)}
+                          className="-mr-2"
+                        >
+                          <EditOutlinedIcon className="text-textColor text-base opacity-30" />
+                        </IconButton>
+                      )}
                     </div>
                     <div className="flex items-center">
-                      <CountdownTimer deadline={escrowInfo.deadline} />
+                      {escrowInfo && (escrowInfo.status === 6 || escrowInfo.status === 3 || escrowInfo.status === 7) ? (
+                        <span className="text-gray-500">Contract Ended</span>
+                      ) : (
+                        <CountdownTimer deadline={escrowInfo.deadline} />
+                      )}
                     </div>
                   </div>
                 </>
@@ -956,7 +1038,7 @@ export default function page() {
               }
             amount={Number(escrowInfo.amount) / 1000_000}
             title="Confirmation"
-            messageTitle="Are you sure you want to reject submission??"
+            messageTitle="Are you sure you want to reject this submission??"
             messageDescription=""
             showUSDC={true}
           >
@@ -980,7 +1062,7 @@ export default function page() {
             amount={Number(escrowInfo.amount) / 1000_000}
             title="Confirmation"
             messageTitle="Are you sure to start the contract??"
-            messageDescription="Contract can oly be terminated by both parties mutually agreeing to do so"
+            messageDescription="Contract can only be terminated by both parties mutually agreeing to do so"
             showUSDC={true}
           >
             <Button
@@ -1025,32 +1107,44 @@ export default function page() {
           open={isDescriptionModalOpen}
           onClose={handleDescriptionModalClose}
           aria-labelledby="description-modal"
-          aria-describedby="edit-description"
+          aria-describedby="view-description"
         >
-          <div className="bg-white p-5 rounded-md w-[90%] md:w-[60rem]  mx-auto mt-32 max-h-[70vh] overflow-y-auto">
-            <h2 id="description-modal-title" className="text-xl font-semibold">
-              Edit Description
-            </h2>
-            <textarea
-              className="w-full h-[50rem] mt-3 p-2 border rounded-md focus:outline-none"
-              value={descriptionInput}
-              onChange={(e) => setDescriptionInput(e.target.value)}
-            />
-            {descriptionError && (
-              <p className="text-red-500 mt-2">{descriptionError}</p>
-            )}
-            <div className="flex justify-end gap-3 mt-4">
-              <Button
-                variant="contained"
-                onClick={() => updateDescription()}
-                disabled={descriptionInput === originalDescription}
-              >
-                Save
-              </Button>
-              <Button variant="outlined" onClick={handleDescriptionModalClose}>
-                Cancel
-              </Button>
+          <div className="bg-white p-5 rounded-md w-[90%] md:w-[60rem] mx-auto mt-32 max-h-[70vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 id="description-modal-title" className="text-xl font-semibold">
+                Contract Description
+              </h2>
+              {escrowInfo && (escrowInfo.status === 6 || escrowInfo.status === 3 || escrowInfo.status === 7) && (
+                <div className="text-sm text-gray-500">
+                  Contract {escrowInfo.status === 7 ? 'Terminated' : 'Completed'}
+                </div>
+              )}
             </div>
+            
+            <div className="mt-3 p-4 bg-gray-50 rounded-lg whitespace-pre-wrap">
+              {descriptionInput}
+            </div>
+
+            {escrowInfo && (escrowInfo.status === 6 || escrowInfo.status === 3 || escrowInfo.status === 7) ? (
+              <div className="flex justify-end mt-4">
+                <Button variant="outlined" onClick={handleDescriptionModalClose}>
+                  Close
+                </Button>
+              </div>
+            ) : (
+              <div className="flex justify-end gap-3 mt-4">
+                <Button
+                  variant="contained"
+                  onClick={() => updateDescription()}
+                  disabled={descriptionInput === originalDescription}
+                >
+                  Save
+                </Button>
+                <Button variant="outlined" onClick={handleDescriptionModalClose}>
+                  Cancel
+                </Button>
+              </div>
+            )}
           </div>
         </Modal>
 

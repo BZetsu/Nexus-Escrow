@@ -56,8 +56,6 @@ export async function updateEscrow(
     `/escrow/update/${escrow.toBase58()}`,
     {
       deadline,
-      //   telegramLink,
-      //   private
     }
   );
   //   if(!apiResponse) {console.log('Do something')}

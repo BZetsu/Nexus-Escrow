@@ -60,9 +60,60 @@ const isPastContract = (es: any) => {
 };
 
 // Update the shouldShowContract helper function
-const shouldShowContract = (contract: any) => {
-  // Show contracts that are either completed (status 6) or terminated (status 7)
-  return contract.status === 6 || contract.status === 7;
+const shouldShowContract = async (contract: any) => {
+  try {
+    // Get participant info
+    const response = await backendApi.get<{
+      data: Array<{
+        userId: string;
+        name: string;
+        address: string;
+      }>;
+    }>('/nexus-user');
+
+    // Try to find founder by both userId and address
+    const founderData = response.data.find(
+      user => user.userId === contract.founder?.toBase58() || 
+              user.address === contract.founder?.toBase58()
+    );
+
+    // Try to find contractor by both userId and address
+    const contractorData = contract.reciever ? 
+      response.data.find(user => 
+        user.userId === contract.reciever?.toBase58() || 
+        user.address === contract.reciever?.toBase58()
+      ) : null;
+
+    // If no contractor found, set status to terminated (7)
+    const finalStatus = (!contractorData || !contract.reciever) ? 7 : contract.status;
+
+    console.log('Participant lookup:', {
+      contract: contract.pubkey.toBase58(),
+      founderAddress: contract.founder?.toBase58(),
+      receiverAddress: contract.reciever?.toBase58(),
+      foundFounder: !!founderData,
+      foundContractor: !!contractorData,
+      originalStatus: contract.status,
+      finalStatus: finalStatus
+    });
+
+    return {
+      ...contract,
+      founder: founderData?.name || "Not available",
+      contractor: contractorData?.name || "Not available",
+      status: finalStatus,
+      shouldShow: finalStatus === 6 || finalStatus === 3 || finalStatus === 7
+    };
+  } catch (err) {
+    console.error('Error fetching participant info:', err);
+    return {
+      ...contract,
+      founder: "Not available",
+      contractor: "Not available",
+      status: 7, // Set to terminated if error
+      shouldShow: true
+    };
+  }
 };
 
 export default function page() {
@@ -71,9 +122,11 @@ export default function page() {
   const anchorWallet = useAnchorWallet();
   const wallet = useWallet();
   const { connection } = useConnection();
+  const [isLoading, setIsLoading] = useState(true);
 
   const getEscrow = async () => {
     try {
+      setIsLoading(true);
       const escrow = await getFounderEscrow(connection, anchorWallet!, "confirmed");
       console.log("Raw escrow data:", escrow);
       const databaseEscrowInfo = await backendApi.get<EscrowResponse>(`/escrow`);
@@ -103,17 +156,32 @@ export default function page() {
         const pubkey = es.pubkey.toBase58();
         const timestamp = timestampMap.get(pubkey);
         
-        // Simplified status determination
-        let status = 0;
+        // Preserve status 9 when setting the status
+        let status = es.status;
         
+        // Add debug log
+        console.log('Processing escrow status:', {
+          contractName: es.contractName,
+          rawStatus: es.status,
+          hasReceiver: !!es.reciever,
+          receiverAddress: es.reciever?.toBase58()
+        });
+
+        // Modified status determination logic
         if (es.status === 5) {
           status = 5; // In Dispute
-        } else if (es.status === 6 || es.completed) {
+        } else if (es.status === 3 || (es.approved && es.completed)) {
+          status = 3; // Approved/Completed
+        } else if (es.status === 6) {
           status = 6; // Completed
         } else if (es.status === 7 || es.terminated) {
           status = 7; // Terminated
-        } else if (es.reciever) {
-          status = 1; // Contract Started
+        } else if (es.status === 9) {
+          status = 9; // Awaiting Response
+        } else if (!es.reciever || es.reciever.toBase58() === '11111111111111111111111111111111') {
+          status = 0; // Not Started - no receiver
+        } else {
+          status = 1; // Contract Started - has receiver
         }
 
         return {
@@ -135,6 +203,8 @@ export default function page() {
       setEscrows(sortedEscrows);
     } catch (e) {
       console.error('Error in getEscrow:', e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -169,6 +239,27 @@ export default function page() {
       })));
     }
   }, [escrows, showPastContracts]);
+
+  // Add new state for past contracts
+  const [pastContracts, setPastContracts] = useState<any[]>([]);
+
+  // Add useEffect to handle async loading of past contracts
+  useEffect(() => {
+    if (showPastContracts && escrows) {
+      const loadPastContracts = async () => {
+        const contracts = await Promise.all(
+          escrows
+            .filter(es => es.status === 6 || es.status === 3 || es.status === 7)
+            .map(async (el) => {
+              const contractWithParticipants = await shouldShowContract(el);
+              return contractWithParticipants;
+            })
+        );
+        setPastContracts(contracts);
+      };
+      loadPastContracts();
+    }
+  }, [showPastContracts, escrows]);
 
   return (
     <Card 
@@ -215,28 +306,41 @@ export default function page() {
       </Stack>
 
       <Stack spacing={2.8} mt={3} className="w-full">
-        {escrows && (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-[200px] sm:h-[300px] w-full">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center text-textColor px-4"
+            >
+              <div className="text-base sm:text-lg font-medium">
+                Loading contracts...
+              </div>
+            </motion.div>
+          </div>
+        ) : escrows && escrows.length > 0 ? (
           showPastContracts ? 
             // Show completed and terminated contracts
-            escrows
-              .filter(shouldShowContract)
-              .map((el, i) => (
-                <CardContract
-                  key={i}
-                  contractName={el.contractName}
-                  amount={Number(el.amount)}
-                  deadline={Number(el.deadline)}
-                  escrow={el.pubkey.toBase58()}
-                  createdAt={el.createdAt}
-                  status={el.status}
-                  type={1}
-                  className="w-full p-5 sm:p-8 block"
-                />
-              ))
+            pastContracts.map((el) => (
+              <CardContract
+                key={el.pubkey.toBase58()}
+                contractName={el.contractName}
+                amount={Number(el.amount)}
+                deadline={Number(el.deadline)}
+                escrow={el.pubkey.toBase58()}
+                createdAt={el.createdAt}
+                status={el.status}
+                type={1}
+                className="w-full p-5 sm:p-8 block"
+                founder={el.founder}
+                contractor={el.contractor}
+              />
+            ))
           : openContracts ?
             // Show only active contracts (Started and Not Started)
             escrows
-              .filter((es) => es.status === 0 || es.status === 1)  // Status 0 (Not Started) and 1 (Started)
+              .filter((es) => es.status === 0 || es.status === 1 || es.status === 9)  // Include status 9
               .map((el, i) => (
                 <CardContract
                   key={i}
@@ -267,6 +371,10 @@ export default function page() {
                   className="w-full p-5 sm:p-8"
                 />
               ))
+        ) : (
+          <div className="text-center text-textColor py-8 text-base sm:text-lg">
+            No Escrowed Contracts Yet
+          </div>
         )}
       </Stack>
     </Card>

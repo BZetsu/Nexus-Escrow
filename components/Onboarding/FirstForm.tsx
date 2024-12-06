@@ -155,11 +155,14 @@ export default function FirstForm({ handleGoToStep }: any) {
         return;
       }
 
+      // Use the uploaded image URL or a default image
+      const imageUrlToUse = uploadedImageUrl || "https://res.cloudinary.com/tech-aku/image/upload/v1731698489/Uploads/tvko7orf3xpcuhjizbs9.jpg";
+
       await init_user(
         anchorWallet,
         connection,
         watchedUsername,
-        uploadedImageUrl,
+        imageUrlToUse,  // Use the actual uploaded image URL
         "",
         "",
         "",
@@ -175,6 +178,17 @@ export default function FirstForm({ handleGoToStep }: any) {
         watchedTwitterProfile,
         wallet
       );
+
+      // After successful user creation, update the database with the image
+      if (uploadedImageUrl) {
+        try {
+          await backendApi.patch(`/nexus-user/${anchorWallet?.publicKey.toBase58()}`, {
+            image: uploadedImageUrl
+          });
+        } catch (error) {
+          console.error("Failed to update image in database:", error);
+        }
+      }
 
       handleGoToStep("second");
       notify_success("Welcome to Nexus!!");

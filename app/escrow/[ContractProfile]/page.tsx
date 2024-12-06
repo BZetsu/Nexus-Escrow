@@ -209,6 +209,11 @@ export default function page() {
       notify_delete();
       notify_success("Applied Successfully!");
       handleCloseModal();
+      
+      // Add delay before redirect to ensure notifications are visible
+      setTimeout(() => {
+        router.push('/escrow/ongoing');
+      }, 1500); // 1.5 second delay
 
     } catch (e) {
       notify_delete();

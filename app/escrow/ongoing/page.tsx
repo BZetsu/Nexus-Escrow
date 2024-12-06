@@ -92,37 +92,38 @@ export default function page() {
       // Create a timestamp map for faster lookup
       const timestampMap = new Map();
       (databaseEscrowInfo as EscrowInfo).data.forEach(data => {
-        timestampMap.set(data.escrowAddress, data.createdAt);
+        try {
+          // Convert ISO date string to timestamp if it's a string, or use directly if it's a number
+          const timestamp = typeof data.createdAt === 'string' 
+            ? new Date(data.createdAt).getTime() 
+            : data.createdAt * 1000; // Convert Unix timestamp to milliseconds
+          
+          if (!isNaN(timestamp)) {
+            timestampMap.set(data.escrowAddress, timestamp);
+          }
+        } catch (err) {
+          console.error('Error processing timestamp for escrow:', data.escrowAddress, err);
+        }
       });
       
       // Add timestamps to all escrows
       const ongoingWithTimestamps = ongoing.map(es => {
         const pubkey = es.pubkey.toBase58();
-        const timestamp = timestampMap.get(pubkey);
+        const timestamp = timestampMap.get(pubkey) || Date.now(); // Use current time as fallback
         
-        // Log raw escrow data
-        console.log("Raw escrow data:", {
-          pubkey,
-          status: es.status,
-          submitted: es.submitted,
-          approved: es.approved
-        });
-
-        let status = es.status;  // Keep original status
-        
-        // Only override for specific cases
+        let status = es.status;
         if (es.submitted && es.approved) {
           status = 3;  // Work Approved
         }
 
         return {
           ...es,
-          createdAt: timestamp || 0,
+          createdAt: Math.floor(timestamp / 1000), // Convert to seconds for consistency
           status: status
         };
       });
       
-      // Sort by timestamp (newest first)
+      // Sort with newest first
       const sortedOngoing = ongoingWithTimestamps.sort((a, b) => b.createdAt - a.createdAt);
       setOngoingEscrow(sortedOngoing);
     } catch (e) {
@@ -145,28 +146,6 @@ export default function page() {
   ];
 
   const [value, setValue] = useState(0);
-
-  // Update the getStatusText function
-  const getStatusText = (status: number | string, isPending: boolean, hasReceiver: boolean) => {
-    console.log("Status check:", { status, isPending, hasReceiver, value });
-
-    // For pending applications
-    if (isPending || status === 'panding' || status === 'pending') {
-      return <span className="italic">Pending...</span>;
-    }
-
-    // For ongoing contracts view
-    if (value === 0) {
-      return "Contract Started";
-    }
-
-    // For disputes
-    if (status === 5) {
-      return "In Dispute";
-    }
-
-    return "Not Started";
-  };
 
   // Add more detailed logging
   useEffect(() => {
@@ -201,30 +180,51 @@ export default function page() {
             ))}
           </div>
           <Stack mt={4} spacing={2.8}>
-            {value === 0 ? (
-              // Ongoing Contracts - exclude approved (status 3) contracts
-              ongoingEscrow?.filter(es => 
+            {isLoading ? (
+              <div className="flex items-center justify-center h-[200px] sm:h-[300px] w-full">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center text-textColor px-4"
+                >
+                  <div className="text-base sm:text-lg font-medium">
+                    Loading contracts...
+                  </div>
+                </motion.div>
+              </div>
+            ) : value === 0 ? (
+              ongoingEscrow && ongoingEscrow.filter(es => 
                 es.reciever && 
-                es.status !== 5 && // not in dispute
-                es.status !== 3 && // not approved
-                es.status !== 6 && // not completed
-                es.status !== 7    // not terminated
+                es.status !== 5 && 
+                es.status !== 3 && 
+                es.status !== 6 && 
+                es.status !== 7    
+              ).length > 0 ? (
+                ongoingEscrow.filter(es => 
+                  es.reciever && 
+                  es.status !== 5 && 
+                  es.status !== 3 && 
+                  es.status !== 6 && 
+                  es.status !== 7    
+                ).map((el, i) => (
+                  <CardContract
+                    key={i}
+                    contractName={el.contractName}
+                    amount={Number(el.amount)}
+                    deadline={Number(el.deadline)}
+                    escrow={el.pubkey.toBase58()}
+                    createdAt={el.createdAt}
+                    status={el.status}
+                    type={3}
+                    onClick={(e: React.MouseEvent) => handleContractClick(e, `/escrow/ongoing/profile/${el.pubkey.toBase58()}`)}
+                    disabled={isNavigating}
+                    className={isNavigating ? 'opacity-30' : ''}
+                  />
+                ))
+              ) : (
+                <div className="text-center text-textColor py-8">No Ongoing Contracts Yet</div>
               )
-              .map((el, i) => (
-                <CardContract
-                  key={i}
-                  contractName={el.contractName}
-                  amount={Number(el.amount)}
-                  deadline={Number(el.deadline)}
-                  escrow={el.pubkey.toBase58()}
-                  createdAt={el.createdAt}
-                  status="Private"
-                  type={3}
-                  onClick={(e: React.MouseEvent) => handleContractClick(e, `/escrow/ongoing/profile/${el.pubkey.toBase58()}`)}
-                  disabled={isNavigating}
-                  className={isNavigating ? 'opacity-30' : ''}
-                />
-              ))
             ) : value === 1 ? (
               // Disputes
               ongoingEscrow?.filter(es => es.status === 5)
@@ -271,20 +271,35 @@ export default function page() {
           <div className="text-sm text-textColor text-center sm:text-left">Pending Applications</div>
 
           <Stack mt={4} spacing={2.8}>
-            {pendingEscrow &&
+            {isLoading ? (
+              <div className="flex items-center justify-center h-[200px] sm:h-[300px] w-full">
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center text-textColor px-4"
+                >
+                  <div className="text-base sm:text-lg font-medium">
+                    Loading applications...
+                  </div>
+                </motion.div>
+              </div>
+            ) : pendingEscrow && pendingEscrow.filter(el => el.status !== 6 && el.status !== 7).length > 0 ? (
               pendingEscrow
-                .filter(el => el.status !== 6 && el.status !== 7) // Filter out completed/terminated
+                .filter(el => el.status !== 6 && el.status !== 7)
                 .map((el, i) => (
                   <CardContract 
                     key={i} 
                     {...el} 
                     contractName={el.escrowName} 
                     createdAt={el.createdAt} 
-                    status={getStatusText(el.status, true, false)} 
+                    status={el.status} 
                     type={3}
                   />
                 ))
-            }
+            ) : (
+              <div className="text-center text-textColor py-8">No Pending Applications Yet</div>
+            )}
           </Stack>
         </Card>
       </div>

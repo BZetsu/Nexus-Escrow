@@ -39,17 +39,15 @@ interface UserDetails {
   // add other fields as needed
 }
 
-// Add interface for API response
+// Update the interface to match the API response
 interface ApiResponse {
-  data: {
-    data: Array<{
-      address: string;
-      name: string;
-      image: string;
-      roles: string[];
-      paymentRatePerHour: number;
-    }>;
-  };
+  data: Array<{
+    address: string;
+    userId: string;
+    image: string;
+    roles: string[];
+    name: string;
+  }>;
 }
 
 export default function CardAppAccept({
@@ -73,12 +71,25 @@ export default function CardAppAccept({
       try {
         if (data?.user) {
           const response = await backendApi.get<ApiResponse>('/nexus-user');
-          const users = response.data.data;
-          const userDetail = users.find((user: any) => 
-            user.address === data.user.toBase58()
+          
+          // First try to find user by userId
+          let userDetail = response.data.find(user => 
+            user.userId === data.user.toBase58()
           );
+
+          // If not found, try by wallet address
+          if (!userDetail) {
+            userDetail = response.data.find(user => 
+              user.address === data.user.toBase58()
+            );
+          }
+
           if (userDetail) {
-            setUserDetails(userDetail);
+            setUserDetails({
+              name: userDetail.name,
+              image: userDetail.image || DragonImg.src,
+              roles: userDetail.roles || ["No role yet"],
+            });
           }
         }
       } catch (error) {
@@ -118,7 +129,7 @@ export default function CardAppAccept({
   });
 
   const handleProfileClick = () => {
-    if (data?.user) {
+    if (data?.user && escrow) {
       const userAddress = data.user.toBase58();
       const escrowAddress = escrow.toBase58();
       router.push(`/escrow/myescrow/${escrowAddress}/${userAddress}`);
@@ -137,20 +148,28 @@ export default function CardAppAccept({
           <div className="relative w-20 h-20 overflow-hidden rounded-lg">
             <Image
               src={userDetails?.image || DragonImg.src}
-              alt={title || "Applicant"}
+              alt={userDetails?.name || title || "Applicant"}
               fill
               className="object-cover object-center"
               priority
               sizes="80px"
               onError={(e: any) => {
+                console.log('Image load error, falling back to default');
                 e.target.src = DragonImg.src;
               }}
             />
           </div>
           <Stack spacing={1} alignItems="start" className="min-w-[120px] mt-2">
-            <div
+            <div 
               onClick={handleProfileClick}
               className="text-base cursor-pointer font-[600] line-clamp-1 text-left hover:text-blue-600 transition-colors"
+              role="button"
+              tabIndex={0}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleProfileClick();
+                }
+              }}
             >
               {userDetails?.name || title}
             </div>
